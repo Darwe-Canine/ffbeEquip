@@ -24,6 +24,19 @@ const maxStatLevelByStar = {
     "3": 100
 }
 
+const statsProgressionByTypeAndRarity = {
+    "1": {
+        "1": [0, 3, 7, 10, 14, 17, 21, 24, 28, 31, 35, 38, 42, 45, 49, 52, 55, 58, 62, 65, 69, 72, 76, 79, 83, 86, 90, 93, 97, 100],
+        "2": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 79, 82, 85, 88, 91, 94, 97, 100],
+        "3": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
+    },
+    "2": {
+        "1": [0, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 18, 21, 24, 27, 30, 33, 37, 41, 45, 49, 54, 59, 64, 69, 75, 81, 87, 93, 100],
+        "2": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 37, 40, 43, 46, 49, 52, 56, 60, 64, 68, 72, 77, 82, 88, 94, 100],
+        "3": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
+    }
+}
+
 function beforeShow() {
     $("#pleaseWaitMessage").addClass("hidden");
     $("#esper").removeClass("hidden");
@@ -256,7 +269,7 @@ function updateStats() {
         var baseStat = baseStats[index];
         var bonusValue = calculateStatBonus(currentEsper, baseStat);
         $("#esper_" + baseStat).html(
-            ownedEspers[currentEsper][baseStat] + "&nbsp;"+
+            Math.round(ownedEspers[currentEsper][baseStat]) + "&nbsp;"+
             "<span class='statsBonus' title='Gives a bonus of +"+bonusValue+" "+ baseStat.toUpperCase() +" to unit equipped with this Esper'>"+
             "(+" + bonusValue + ")" +
             "</span>");
@@ -270,8 +283,9 @@ function addStats(level, star, esperName) {
 
     for (index = 0; index < baseStats.length; index++) {
         var minStat = board.stats[star][baseStats[index].toUpperCase()][0];
-        var maxStat = board.stats[star][baseStats[index].toUpperCase()][1];
-        ownedEsper[baseStats[index]] = minStat + (maxStat - minStat) / maxStatLevelByStar[star] * level;
+        var maxStatGain = board.stats[star][baseStats[index].toUpperCase()][1] - minStat;
+        
+        ownedEsper[baseStats[index]] = Math.round(minStat + maxStatGain * statsProgressionByTypeAndRarity[board.statPattern[star]][star][level - 1]/100);
     }
     
     for (index in board.nodes) {
@@ -411,6 +425,16 @@ function showNode(node, parentNodeHtml, star, scale=1) {
         nodeHtml.html(html);
         nodeHtml.addClass("ability");
     }
+    if (node.lbFillRate) {
+        var html = '<span class="iconHolder"><img class="icon" src="/img/items/ability_78.png"></img></span><span class="text">+' + node.lbFillRate + '% LB fill rate</span><span class="cost">' + node.cost+ ' SP</span>';
+        nodeHtml.html(html);
+        nodeHtml.addClass("ability");
+    }
+    if (node.lbDamage) {
+        var html = '<span class="iconHolder"><img class="icon" src="/img/items/ability_78.png"></img></span><span class="text">+' + node.lbDamage + '% LB damage</span><span class="cost">' + node.cost+ ' SP</span>';
+        nodeHtml.html(html);
+        nodeHtml.addClass("ability");
+    }
     if (node.evade && node.evade.physical) {
         var html = '<span class="iconHolder"><img class="icon" src="/img/items/ability_97.png"></img></span><span class="text">' + node.evade.physical + '% physical evasion<a href="http://exvius.gamepedia.com/Air_Step" target="_blank" rel="noreferrer"><span class="glyphicon glyphicon-new-window wikiLink"></span></a></span><span class="cost">' + node.cost+ ' SP</span>';
         nodeHtml.html(html);
@@ -418,6 +442,28 @@ function showNode(node, parentNodeHtml, star, scale=1) {
     }
     if (node.evade && node.evade.magical) {
         var html = '<span class="iconHolder"><img class="icon" src="/img/items/ability_97.png"></img></span><span class="text">' + node.evade.magical + '% magical evasion<a href="http://exvius.gamepedia.com/Air_Wall" target="_blank" rel="noreferrer"><span class="glyphicon glyphicon-new-window wikiLink"></span></a></span><span class="cost">' + node.cost+ ' SP</span>';
+        nodeHtml.html(html);
+        nodeHtml.addClass("ability");
+    }
+    
+    if (node.conditional) {
+        var html = '';
+        node.conditional.forEach(c => {
+            if (c.equipedCondition && typeList.includes(c.equipedCondition)) {
+               html += '<span class="iconHolder"><img class="icon" src="/img/items/' + c.icon + '"></img></span><span class="text">'
+               let first = true;
+               baseStats.filter(s => c[s+'%']).forEach(s => {
+                   if (first) {
+                       first = false;
+                   } else {
+                       html += ', ';
+                   }
+                   html+= s.toUpperCase() + '+' + c[s+'%'] + '%';
+               });
+               html += ' if <i class="img img-equipment-' + c.equipedCondition + '"></i></span>';
+            }
+        });
+        html += '<span class="cost">' + node.cost+ ' SP</span>';
         nodeHtml.html(html);
         nodeHtml.addClass("ability");
     }
@@ -457,7 +503,7 @@ function abilityName(text) {
 }
 
 function prepareSave() {
-    if (logged) {
+    if (logged && !linkMode) {
         saveNeeded = true;
         if (saveTimeout) {clearTimeout(saveTimeout)}
         saveTimeout = setTimeout(saveUserData,3000, false, false, true);
@@ -503,6 +549,12 @@ function addNodeStatToEsper(esper, node) {
     if (node.lbPerTurn) {
         esper.lbPerTurn = node.lbPerTurn;
     }
+    if (node.lbFillRate) {
+        esper.lbFillRate = node.lbFillRate;
+    }
+    if (node.lbDamage) {
+        esper.lbDamage = node.lbDamage;
+    }
     if (node.evade && node.evade.physical) {
         if (!esper.evade) {esper.evade = {};}
         esper.evade.physical = node.evade.physical;
@@ -510,6 +562,9 @@ function addNodeStatToEsper(esper, node) {
     if (node.evade && node.evade.magical) {
         if (!esper.evade) {esper.evade = {};}
         esper.evade.magical = node.evade.magical;
+    }
+    if (node.conditional) {
+        addContional(esper, node.conditional);
     }
     for (var i = baseStats.length; i--;) {
         if (node[percentValues[baseStats[i]]]) {
@@ -536,6 +591,12 @@ function unselectNodeAndChildren(esper, node) {
         if (node.lbPerTurn) {
             delete esper.lbPerTurn;
         }
+        if (node.lbFillRate) {
+            delete esper.lbFillRate;
+        }
+        if (node.lbDamage) {
+            delete esper.lbDamage;
+        }
         if (node.evade && node.evade.physical && esper.evade && esper.evade.physical) {
             delete esper.evade.physical;
         }
@@ -544,6 +605,9 @@ function unselectNodeAndChildren(esper, node) {
         }
         if (node.evade && !node.evade.physical && !node.evade.magical) {
             delete esper.evade;
+        }
+        if (node.conditional) {
+            removeContional(esper, node.conditional);
         }
         for (var i = baseStats.length; i--;) {
             if (node[percentValues[baseStats[i]]]) {
@@ -562,30 +626,30 @@ function addKillers(esper, killers) {
         addKiller(esper, killers[i].name, killers[i].physical, killers[i].magical);
     }
 }
-function addKiller(skill, race, physicalPercent, magicalPercent) {
-    if (!skill.killers) {
-        skill.killers = [];
+function addKiller(esper, race, physicalPercent, magicalPercent) {
+    if (!esper.killers) {
+        esper.killers = [];
     }
     var killerData;
-    for (var index in skill.killers) {
-        if (skill.killers[index].name == race) {
-            killerData = skill.killers[index];
+    for (var index in esper.killers) {
+        if (esper.killers[index].name == race) {
+            killerData = esper.killers[index];
             break;
         }
     }
     
     if (!killerData) {
         killerData = {"name":race};
-        skill.killers.push(killerData);
+        esper.killers.push(killerData);
     }
-    if (physicalPercent != 0) {
+    if (physicalPercent) {
         if (killerData.physical) {
             killerData.physical += physicalPercent;
         } else {
             killerData.physical = physicalPercent;
         }
     }
-    if (magicalPercent != 0) {
+    if (magicalPercent) {
         if (killerData.magical) {
             killerData.magical += magicalPercent;
         } else {
@@ -690,6 +754,29 @@ function removeFromStat(esper, stat, value) {
     }
 }
 
+function addContional(esper, conditionals) {
+    if (!esper.conditional) {
+        esper.conditional = [];
+    }
+    conditionals.forEach(c => esper.conditional.push(c));
+}
+
+function removeContional(esper, conditionals) {
+    if (esper.conditional) {
+        conditionals.forEach(cNode => {
+            esper.conditional.forEach((cEsper, index) => {
+                if (cNode.equipedCondition == cEsper.equipedCondition) {
+                    esper.conditional.splice(index, 1);
+                }
+            })
+        })
+        if (esper.conditional.length == 0) {
+            delete esper.conditional
+        }
+    }
+    
+}
+
 function onMouseOverNode(x,y) {
     var path = findPathTo(x,y,esperBoards[currentEsper]);
     if (path) {
@@ -731,6 +818,7 @@ function findPathTo(x,y, fromNode, currentPath = []) {
 }
 
 function displayEspers() {
+    console.log("Entering displayEspers function. logged : " + logged + ", linkMode : " + linkMode + ", ownedEspers : " + Object.keys(ownedEspers).length)
     if (!logged && !linkMode) {
         ownedEspers = {};
         for (var index in espers) {
@@ -745,6 +833,18 @@ function displayEspers() {
     }
     if (linkMode) {
         // init esper from link mode
+        
+        if (typeof ownedEspers === "string") {
+            var esper = espers.find(esper => esper.id.toUpperCase() == ownedEspers.replace("_", " ").toUpperCase());
+            if (esper) {
+                ownedEspers = {};
+                ownedEspers[esper.name] = JSON.parse(JSON.stringify(esper));
+                ownedEspers[esper.name].rarity = esper.maxLevel;
+                ownedEspers[esper.name].level = maxLevelByStar[ownedEspers[esper.name].rarity] 
+                ownedEspers[esper.name].selectedSkills = [];
+            } else {
+            }
+        }
         
         var esperName = Object.keys(ownedEspers)[0];
         ownedEspers[esperName].resist = JSON.parse(JSON.stringify(esperBoards[esperName].resist[ownedEspers[esperName].rarity]));
@@ -845,35 +945,59 @@ function getPositionFromString(posString) {
 }
 
 function notLoaded() {
-    if (window.location.hash.length > 1) {
-        var hashValue = window.location.hash.substr(1);
-        ownedEspers = JSON.parse(atob(hashValue));
-        
-        $('.navbar').addClass("hidden");
-        linkMode = true;
-    } else {
-        ownedEspers = {};    
-    }
+    console.log("entering notLoaded function");
+    console.trace();
+    ownedEspers = {};
+    loadLink();
     
     if (esperBoards) {
         displayEspers();
     }
     $("#pleaseWaitMessage").addClass("hidden");
-    $("#loginMessage").removeClass("hidden");
+    if (!linkMode) {
+        $("#loginMessage").removeClass("hidden");
+    }
     $("#inventory").addClass("hidden");
+    console.log("exiting notLoaded function");
 }
 
 function inventoryLoaded() {
+    console.log("entering inventoryLoaded function");
+    console.trace();
     logged = true;
+    loadLink();
     if (esperBoards) {
         displayEspers();
     }
+    console.log("exiting inventoryLoaded function");
+}
+
+function loadLink() {
+    if (window.location.hash.length > 1) {
+        console.log("Loading esper link");
+        var hashValue = window.location.hash.substr(1);
+        
+        try {
+            ownedEspers = JSON.parse(atob(hashValue));
+        } catch (e) {
+            ownedEspers = hashValue;
+        }
+        
+        $('.navbar').addClass("hidden");
+        $("#header").addClass("hidden");
+        linkMode = true;
+        console.log("finished Loading esper link");
+    }    
 }
 
 function onLevelChange() {
     var star = $("#esperStar").val();
     var level = parseInt($("#level").val());
-    if (level > maxLevelByStar[star]) {
+    if (level < 1) {
+        $("#level").val("1");
+        setEsperLevel(1);
+    } else if (level > maxLevelByStar[star]) {
+        $("#level").val(maxLevelByStar[value]);
         setEsperLevel(maxLevelByStar[value]);
     } else {
         setEsperLevel(level);

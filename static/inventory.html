@@ -373,10 +373,19 @@
                 </div>
                 <div class="itemsContent">
                     <div id="inventory">
-                        <a id="exportLinks" class="link" onclick="exportAsCsv()">
-                            <span class="glyphicon glyphicon-share-alt"></span>
-                            Export as CSV
-                        </a>
+                        <div id="exportLinks" class="dropdown">
+                            <a class="dropdown-toggle link" type="button" data-toggle="dropdown">
+                                <span class="glyphicon glyphicon-share-alt"></span>
+                                <span class="text hidden-xs hidden-sm">
+                                    Export inventory<span class="caret"></span>
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="link" onclick="exportAsCsv()"><span class="glyphicon glyphicon-share-alt"></span>Export as CSV</a></li>
+                                <li><a class="link" onclick="exportAsJson()"><span class="exportAsJson">{ }</span> Export as json</a></li>
+                            </ul>
+                        </div>
+                        
                         <ul class="nav nav-tabs nav-tabs-img">
                             <li class="equipment"  onclick="showEquipments()" title="Show all equipments">
                                 <a><i class='img img-tab-equipments tab'></i></a>
@@ -391,6 +400,12 @@
                                 <a><i class='img img-tab-settings tab'></i></a>
                             </li>
                         </ul>
+                        <a id="importLink" class="link" onclick="importInventory();">
+                            <span class="glyphicon glyphicon-save"></span>
+                            <span class="text hidden-xs hidden-sm">
+                                Import inventory
+                            </span>
+                        </a>
                         <div id="tabsRightData" class='hidden-xs'>
                             <span id="sortType"></span>
                         </div>
@@ -445,7 +460,8 @@
                         <div class="enhancementTypes">
                             <div class="enhancementType">
                                 <div class="title">Rare</div>
-                                <div class="rareEnhancement value rare" onclick="toggleItemEnhancement('rare')">HP/ATK +15%</div>
+                                <div class="rareEnhancement value rare_3" onclick="toggleItemEnhancement('rare_3')">HP/ATK +15%</div>
+                                <div class="rareEnhancement value rare_4" onclick="toggleItemEnhancement('rare_4')">HP/ATK +20%</div>
                             </div>
                             <div class="enhancementType">
                                 <div class="title">HP</div>
@@ -557,6 +573,7 @@
 		<script src="lib/jquery.ba-throttle-debounce.min.js"></script>
         <script src="lib/notify.min.js"></script>
         <script src="lib/FileSaver.min.js"></script>
+        <script src="lib/jjv.js"></script>
         <script src="constants.js"></script>
         <script src="common.js"></script>
         <script src="builder/common.js"></script>

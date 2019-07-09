@@ -124,15 +124,20 @@ class TreeComparator {
         var valueTDH2 = getValue(item2, "singleWielding." + stat);
         var valueDH1 = getValue(item1, "singleWieldingOneHanded." + stat);
         var valueDH2 = getValue(item2, "singleWieldingOneHanded." + stat);
+        var glex1 = getValue(item1, "singleWieldingOneHanded.glex");
+        var glex2 = getValue(item2, "singleWieldingOneHanded.glex");
         
+        if (stat == "mag" && glex1 != glex2) {
+          return "sameLevel";
+        }
         if (valueTDH1 > valueTDH2) {
-            if (valueTDH1 => valueDH2) {
+            if (valueTDH1 >= valueDH2) {
                 return "strictlyWorse";
             } else {
                 return "sameLevel";
             }
         } else if (valueTDH1 < valueTDH2) {
-            if (valueTDH2 => valueDH1) {
+            if (valueTDH2 >= valueDH1) {
                 return "strictlyBetter";
             } else {
                 return "sameLevel";
@@ -329,6 +334,32 @@ class TreeComparator {
             } else {
                 return "equivalent";
             }
+        }
+    }
+    
+    static compareByAllAilments(item1, item2, ailments) {
+        let item1CoversAllAilments = TreeComparator.itemCoversAilmentsNeeds(item1, ailments);
+        let item2CoversAllAilments = TreeComparator.itemCoversAilmentsNeeds(item2, ailments);
+        if (item1CoversAllAilments) {
+            if (item2CoversAllAilments) {
+                return "equivalent"
+            } else {
+                return "strictlyWorse";
+            }
+        } else {
+            if (item2CoversAllAilments) {
+                return "strictlyBetter";
+            } else {
+                return "equivalent"
+            }
+        }
+    }
+    
+    static itemCoversAilmentsNeeds(item, ailments) {
+        if (item.resist) {
+            return item.resist.filter(r => ailments[r.name] && (ailments[r.name] <= r.percent)).length == Object.keys(ailments).length;
+        } else {
+            return false;
         }
     }
     

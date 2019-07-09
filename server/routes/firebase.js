@@ -33,7 +33,7 @@ const statsSchema = [
 ];
 
 const itemEnchantmentsSchema =  [
-    Joi.string().valid('rare'),
+    Joi.string().valid('rare_3'),Joi.string().valid('rare_4'),
     Joi.string().valid('hp_15'),Joi.string().valid('hp_12'),Joi.string().valid('hp_10'),Joi.string().valid('hp_7'),Joi.string().valid('hp_5'),Joi.string().valid('hp_3'),Joi.string().valid('hp_1'),
     Joi.string().valid('mp_15'),Joi.string().valid('mp_12'),Joi.string().valid('mp_10'),Joi.string().valid('mp_7'),Joi.string().valid('mp_5'),Joi.string().valid('mp_3'),Joi.string().valid('mp_1'),
     Joi.string().valid('atk_15'),Joi.string().valid('atk_12'),Joi.string().valid('atk_10'),Joi.string().valid('atk_7'),Joi.string().valid('atk_5'),Joi.string().valid('atk_3'),Joi.string().valid('atk_1'),
@@ -80,6 +80,8 @@ const partyBuildSchema = Joi.object().keys({
             physical: Joi.number().min(0).max(100),
             magical: Joi.number().min(0).max(100)
         }),
+        drawAttacks: Joi.number().min(0).max(600),
+        lbDamage: Joi.number().min(0).max(600),
         stack: Joi.number().min(0).max(99),
         level: Joi.number().min(0).max(120)
     })).required(),
@@ -125,6 +127,18 @@ const partyBuildSchema = Joi.object().keys({
             "def":Joi.number().integer(),
             "mag":Joi.number().integer(),
             "spr":Joi.number().integer(),
+        }),
+        "buffs":Joi.object().keys({
+            "atk":Joi.number().integer(),
+            "def":Joi.number().integer(),
+            "mag":Joi.number().integer(),
+            "spr":Joi.number().integer(),
+        }),
+        "breakability":Joi.object().keys({
+            "atk":Joi.boolean(),
+            "def":Joi.boolean(),
+            "mag":Joi.boolean(),
+            "spr":Joi.boolean(),
         })
     }),
     "useNewJpDamageFormula": Joi.boolean().required(),

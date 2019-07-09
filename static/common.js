@@ -28,6 +28,27 @@ var lazyLoader = (window.LazyLoad) ? new LazyLoad({
     elements_selector: 'img.lazyload'
 }) : null;
 
+window.requestIdleCallback =
+  window.requestIdleCallback ||
+  function (cb) {
+    var start = Date.now();
+    return setTimeout(function () {
+      cb({
+        didTimeout: false,
+        timeRemaining: function () {
+          return Math.max(0, 50 - (Date.now() - start));
+        }
+      });
+    }, 1);
+  }
+
+window.cancelIdleCallback =
+    window.cancelIdleCallback ||
+        function (id) {
+            clearTimeout(id);
+        }
+
+
 /* 
  * Check if localStorage is enable and available
  * Adapted from https://github.com/Modernizr/Modernizr/blob/master/feature-detects/storage/localstorage.js
@@ -47,7 +68,7 @@ var localStorageAvailable = function(){
     return enabled;
 }();
 
-function getImageHtml(item) {
+function getImageHtml(item, actionOnImage = undefined) {
     var html = '<div class="td type">';
 
     if (item.special && item.special.includes("notStackable")) {
@@ -57,9 +78,13 @@ function getImageHtml(item) {
         html += "<img class='miniIcon left' src='img/icons/twoHanded.png' title='Two-handed'>";
     }
 
+    if (actionOnImage) {
+        html += '<div class="change" onclick="' + actionOnImage + '">';
+    }
     if (item.icon) {
         var src_attr = (lazyLoader !== null) ? 'data-src' : 'src';
         var class_attr = (lazyLoader !== null) ? 'icon lazyload' : 'icon';
+        
         html += "<img "+src_attr+"='img/items/" + item.icon + "' class='"+class_attr+"'></img>";
     } else if (item.type == "esper") {
         // no lazyload for espers (uses CSS background)
@@ -68,6 +93,9 @@ function getImageHtml(item) {
         // no image
     } else {
         html += "<i class='img img-equipment-" + item.type + " icon'></i>";
+    }
+    if (actionOnImage) {
+        html += "</div>";
     }
     html += "</div>";
     return html;
@@ -195,118 +223,6 @@ function getExclusiveUnitsHtml(item) {
 }
 function getSpecialHtml(item) {
     var special = "";
-    $(item.special).each(function(index, itemSpecial) {
-        if (itemSpecial != "twoHanded" && itemSpecial != "notStackable" && itemSpecial != "dualWield") {
-            special += "<li>" + toHtml(itemSpecial) + "</li>";
-        }
-    });
-    return special;
-}
-
-// Create an HTML span containing the stats of the item
-var getStatDetail = function(item) {
-    var detail = "";
-    var first = true;
-    var statsToDisplay = baseStats;
-    if (item.type == "monster") {
-        statsToDisplay = ["def", "spr"];
-    }
-    var statBonusCoef = 1;
-    if (item.type == "esper") {
-        if (item.esperStatsBonus) {
-            statBonusCoef += item.esperStatsBonus["hp"] / 100;
-        }
-        if (builds && builds[currentUnitIndex] && builds[currentUnitIndex].build) {
-            for (var i = 0; i < builds[currentUnitIndex].build.length; i++) {
-                if (i != 10) {
-                    if (builds[currentUnitIndex].build[i] && builds[currentUnitIndex].build[i].esperStatsBonus) {
-                        statBonusCoef += builds[currentUnitIndex].build[i].esperStatsBonus["hp"] / 100;
-                    }
-                }
-            }
-        }
-        statBonusCoef = Math.min(3, statBonusCoef);
-    } 
-    $(statsToDisplay).each(function(index, stat) {
-        detail += "<span class='" + stat + "'>";
-
-        if (item[stat]) {
-            if (first) {
-                first = false;
-            } else {
-                detail += ', ';
-            }
-            detail += stat + '+' + Math.floor(item[stat] * statBonusCoef);
-        }
-        if (item[stat+'%']) {
-            if (first) {
-                first = false;
-            } else {
-                detail += ', ';
-            }
-            detail += stat + '+' + item[stat+'%'] + '%';
-        }
-
-        detail += "</span>";
-
-    });
-    return detail;
-};
-
-function getEnhancements(item) {
-    var html = '<div class="enhancements">';
-    var first = true;
-    for (var i = 0, len = item.enhancements.length; i < len; i++) {
-        if (first) {
-            first = false;
-            html += '<img src="img/icons/dwarf.png"/>'
-        } else {
-            html += ", ";
-        }
-        var enhancement = item.enhancements[i];
-        if (enhancement == "rare") {
-            html += itemEnhancementLabels["rare"][item.type];
-        } else {
-            html += itemEnhancementLabels[enhancement];
-        }
-    }
-    html += '</div>';
-    return html;
-}
-
-function getEquipedConditionHtml(item) {
-    var conditions = "";
-    var first = true;
-    for(var equipedConditionsIndex in item.equipedConditions) {
-        if (first) {
-            first = false;
-        } else {
-            conditions += " and ";
-        }
-        conditions += "<i class='img img-equipment-" + item.equipedConditions[equipedConditionsIndex] + "'></i>";
-    }
-    return "<div class='exclusive'>If equiped with " + conditions + "</div>";
-}
-
-function displayItemLine(item) {
-    html = "";
-    // type
-    html += getImageHtml(item);
-
-    // name
-    html += getNameColumnHtml(item);
-
-    // value
-    html += '<div class="td value sort">' + item.calculatedValue;
-    if (stat == 'inflict' || stat == 'evade' || stat == 'resist') {
-        html += '%';
-    }
-    html += "</div>";
-
-    // special
-    html += '<div class="td special">';
-
-    var special = "";
     
     if (item.element) {
         special += getElementHtml(item.element);
@@ -334,6 +250,9 @@ function displayItemLine(item) {
     }
     if (item.allowUseOf) {
         special += "<li>Allow use of <i class='img img-equipment-" + item.allowUseOf + " inline'></i></li>";
+    }
+    if (item.conditional) {
+        special += getConditionalHtml(item.conditional);
     }
     if (item.evade) {
         if (item.evade.physical) {
@@ -404,9 +323,148 @@ function displayItemLine(item) {
     if (item.esperStatsBonus) {
         special += "<li>Increase esper's bonus stats ("+ item.esperStatsBonus.hp + "%)</li>";
     }
-    if (item.special) {
-        special += getSpecialHtml(item);
+    if (item.drawAttacks) {
+        special += "<li>+" + item.drawAttacks + "% draw attacks</li>";
     }
+    if (item.breakability && (item.breakability.atk || item.breakability.def || item.breakability.mag || item.breakability.spr)) {
+        special += '<li>Vulnerable to <span class="uppercase">' + baseStats.filter(s => item.breakability[s]).join("/") + '</span> breaks</li>';
+    }
+    if (item.special) {
+        $(item.special).each(function (index, itemSpecial) {
+            if (itemSpecial != "twoHanded" && itemSpecial != "notStackable" && itemSpecial != "dualWield") {
+                special += "<li>" + toHtml(itemSpecial) + "</li>";
+            }
+        });
+    }
+    return special;
+}
+
+function getConditionalHtml(conditionals) {
+    var html = "";
+    conditionals.forEach(c => {
+       if (c.equipedCondition && typeList.includes(c.equipedCondition)) {
+           html += '<div><img class="icon" src="/img/items/' + c.icon + '"></img>';
+           let first = true;
+           baseStats.filter(s => c[s+'%']).forEach(s => {
+               if (first) {
+                   first = false;
+               } else {
+                   html += ', ';
+               }
+               html+= s.toUpperCase() + '+' + c[s+'%'] + '%';
+           })
+           html += ' if <i class="img img-equipment-' + c.equipedCondition + '"></i></div>';
+       }
+    });
+    return html;
+}
+
+// Create an HTML span containing the stats of the item
+var getStatDetail = function(item) {
+    var detail = "";
+    var first = true;
+    var statsToDisplay = baseStats;
+    if (item.type == "monster") {
+        statsToDisplay = ["def", "spr"];
+    }
+    var statBonusCoef = 1;
+    if (item.type == "esper") {
+        if (item.esperStatsBonus) {
+            statBonusCoef += item.esperStatsBonus["hp"] / 100;
+        }
+        if (builds && builds[currentUnitIndex] && builds[currentUnitIndex].build) {
+            for (var i = 0; i < builds[currentUnitIndex].build.length; i++) {
+                if (i != 10) {
+                    if (builds[currentUnitIndex].build[i] && builds[currentUnitIndex].build[i].esperStatsBonus) {
+                        statBonusCoef += builds[currentUnitIndex].build[i].esperStatsBonus["hp"] / 100;
+                    }
+                }
+            }
+        }
+        statBonusCoef = Math.min(3, statBonusCoef);
+    } 
+    $(statsToDisplay).each(function(index, stat) {
+        detail += "<span class='" + stat + "'>";
+
+        if (item[stat]) {
+            if (first) {
+                first = false;
+            } else {
+                detail += ', ';
+            }
+            detail += stat + '+' + Math.floor(item[stat] * statBonusCoef);
+        }
+        if (item[stat+'%']) {
+            if (first) {
+                first = false;
+            } else {
+                detail += ', ';
+            }
+            detail += stat + '+' + item[stat+'%'] + '%';
+        }
+
+        detail += "</span>";
+
+    });
+    return detail;
+};
+
+function getEnhancements(item) {
+    var html = '<div class="enhancements">';
+    var first = true;
+    for (var i = 0, len = item.enhancements.length; i < len; i++) {
+        if (first) {
+            first = false;
+            html += '<img src="img/icons/dwarf.png"/>'
+        } else {
+            html += ", ";
+        }
+        var enhancement = item.enhancements[i];
+        if (enhancement == "rare_3") {
+            html += itemEnhancementLabels["rare_3"][item.type];
+        } else if (enhancement == "rare_4") {
+            html += itemEnhancementLabels["rare_4"][item.type];
+        } else {
+            html += itemEnhancementLabels[enhancement];
+        }
+    }
+    html += '</div>';
+    return html;
+}
+
+function getEquipedConditionHtml(item) {
+    var conditions = "";
+    var first = true;
+    for(var equipedConditionsIndex in item.equipedConditions) {
+        if (first) {
+            first = false;
+        } else {
+            conditions += " and ";
+        }
+        conditions += "<i class='img img-equipment-" + item.equipedConditions[equipedConditionsIndex] + "'></i>";
+    }
+    return "<div class='exclusive'>If equiped with " + conditions + "</div>";
+}
+
+function displayItemLine(item, actionOnImage = "") {
+    html = "";
+    // type
+    html += getImageHtml(item, actionOnImage);
+
+    // name
+    html += getNameColumnHtml(item);
+
+    // value
+    html += '<div class="td value sort">' + item.calculatedValue;
+    if (stat == 'inflict' || stat == 'evade' || stat == 'resist') {
+        html += '%';
+    }
+    html += "</div>";
+
+    // special
+    html += '<div class="td special">';
+
+    let special = getSpecialHtml(item);
     if (special.length != 0) {
         html += "<ul>" + special + "<ul>";
     }
@@ -603,6 +661,7 @@ function loadInventory() {
         Modal.show({
             title: "Google Authentication",
             body: '<p>You\'ll be redirected to a google authentication page</p>'+
+                  "<p>This account is only for FFBE Equip to store your data. It will NOT link automatically to your FFBE account. You don't need to switch to Google to log in FFBE.</p>" +
                   '<p class="loginMessageDetail">'+
                     'This site is using '+
                     '<a href="https://en.wikipedia.org/wiki/OAuth" target="_blank" rel="noreferrer">OAuth2 <span class="glyphicon glyphicon-question-sign"/></a> '+
@@ -763,7 +822,7 @@ var filter = function(data, onlyShowOwnedItems = true, stat = "", baseStat = 0, 
     for (var index = 0, len = data.length; index < len; index++) {
         var item = data[index];
         if (!onlyShowOwnedItems || itemInventory && itemInventory[item.id]) {
-            if (showNotReleasedYet || !item.access.includes("not released yet")) {
+            if (showNotReleasedYet || !item.access.includes("not released yet") || (selectedUnitId && item.tmrUnit == selectedUnitId) || (selectedUnitId && item.stmrUnit == selectedUnitId)) {
                 if (types.length == 0 || types.includes(item.type)) {
                     if (elements.length == 0 || (item.element && matches(elements, item.element)) || (elements.includes("noElement") && !item.element) || (item.resist && matches(elements, item.resist.map(function(resist){return resist.name;})))) {
                         if (ailments.length == 0 || (item.ailments && matches(ailments, item.ailments.map(function(ailment){return ailment.name;}))) || (item.resist && matches(ailments, item.resist.map(function(res){return res.name;})))) {
@@ -825,8 +884,28 @@ function keepOnlyOneInstance(data) {
 }
 
 // Sort by calculated value (will be 0 if not sort is asked) then by name
-var sort = function(items) {
+var sort = function(items, unitId) {
     return items.sort(function (item1, item2){
+        if (unitId) {
+            if (item1.tmrUnit == unitId) {
+                if (item2.tmrUnit != unitId) {
+                    return -1;
+                }
+            } else if (item2.tmrUnit == unitId) {
+                if (item1.tmrUnit != unitId) {
+                    return 1;
+                }
+            }
+            if (item1.stmrUnit == unitId) {
+                if (item2.stmrUnit != unitId) {
+                    return -1;
+                }
+            } else if (item2.stmrUnit == unitId) {
+                if (item1.stmrUnit != unitId) {
+                    return 1;
+                }
+            }
+        }
 		if (item2.calculatedValue == item1.calculatedValue) {
             var typeIndex1 = typeListWithEsper.indexOf(item1.type);
             var typeIndex2 = typeListWithEsper.indexOf(item2.type);
@@ -932,11 +1011,32 @@ var exclusiveForbidAccess = function(item, selectedUnitId) {
 var containsText = function(text, item) {
 
     var result = true;
-    text.split(" ").forEach(function (token) {
-        result = result && item.searchString.match(new RegExp(escapeRegExp(token),'i'));
+    getSearchTokens(text).forEach(function (token) {
+        result = result && matchesToken(token, item.searchString);
     });
     return result;
 };
+
+function matchesToken(token, text) {
+    return text.match(new RegExp(escapeRegExp(token).replace('\\*', '\\d+(-\\d+)?'),'i'))
+}
+
+
+// Add support for search text with quote. Text between quote won't be further splited for search
+function getSearchTokens(text) {
+    let tokens = [];
+    let betweenQuotes = text.match(/"[^"]*"/g);
+    if (betweenQuotes) {
+        betweenQuotes.forEach(token => {
+            tokens.push(token.substr(1, token.length-2));
+            text = text.replace(token, '');
+        });
+    }
+    if (text) {
+        tokens = tokens.concat(text.split(' '));
+    }
+    return tokens.filter(token => token.trim() != '');
+}
 
 
 // Return true if the item has the required stat
@@ -948,12 +1048,16 @@ var hasStat = function(stat, item) {
 var hasStats = function(additionalStat, item) {
     var match = true;
     $(additionalStat).each(function(index, addStat) {
-        if (!item[addStat] && !item[addStat + '%']) {
+        if (!item[addStat] && !item[addStat + '%'] && !(addStat=='twoHanded' && isTwoHanded(item))) {
             match = false;
         }
     });
     return match;
 };
+
+function isTwoHanded(item) {
+    return (item && item.special && item.special.includes("twoHanded"));
+}
 
 // Return true if the item has at least one access that is not forbidden by filters
 var haveAuthorizedAccess = function(forbiddenAccessList, item) {
@@ -1159,8 +1263,19 @@ function prepareSearch(data) {
         if (item["condition"]) {
             textToSearch += "|Only " + item["condition"];
         }
+        if (item["equipedConditions"]) {
+            item.equipedConditions.forEach(c => {
+                textToSearch += "|If equiped with " + c;
+            });
+        }
+        if (item.allowUseOf) {
+            textToSearch += "|Allow use of " + item.allowUseOf;
+        }
         if (item.mpRefresh) {
             textToSearch += "|Recover MP (" + item.mpRefresh + "%) per turn";
+        }
+        if (item.drawAttacks) {
+            textToSearch += "|+" + item.drawAttacks + "% draw attacks";
         }
         if (item["special"]) {
             for (var i = 0, len = item.special.length; i < len;i++) {
@@ -1173,12 +1288,18 @@ function prepareSearch(data) {
                     textToSearch += "|" + "Increase equipment " + baseStats[index].toUpperCase() + "(" + item.singleWielding[baseStats[index]] + "%) when single wielding"
                 }
             }
+            if (item.singleWielding.accuracy) {
+                textToSearch += "|" + "Increase Accuracy (" + item.singleWielding.accuracy + "%) when single wielding";
+            }
         }
         if (item.singleWieldingOneHanded) {
             for (var index in baseStats) {
                 if (item.singleWieldingOneHanded[baseStats[index]]) {
                     textToSearch += "|" + "Increase equipment " + baseStats[index].toUpperCase() + "(" + item.singleWieldingOneHanded[baseStats[index]] + "%) when single wielding a one-handed weapon"
                 }
+            }
+            if (item.singleWieldingOneHanded.accuracy) {
+                textToSearch += "|" + "Increase Accuracy (" + item.singleWieldingOneHanded.accuracy + "%) when single wielding a one-handed wreapon";
             }
         }
         if (item.dualWielding) {
@@ -1426,7 +1547,12 @@ function saveInventory(successCallback, errorCallback) {
     });
 }
 
- function saveEspers(successCallback, errorCallback) {
+ function saveEspers(successCallback, errorCallback, forceSave = false) {
+    if (!forceSave && (!ownedEspers || Object.keys(ownedEspers).length == 0)) {
+        if (confirm("You're trying to save empty espers. Are you sure you want to erase your espers ?")) {
+            saveEspers(successCallback, errorCallback, true);
+        }
+    }
     $.ajax({
         url: server + '/espers',
         method: 'PUT',
@@ -1453,9 +1579,27 @@ function getStaticData(name, localized, callback) {
         callback(data);
     } else {
         // Data NOT found, let's fetch it
+        $.notify("Downloading " + name, {
+            className: "info",
+            autoHide:false
+        });
+        let notification = $('.notifyjs-corner').children().first();
+        let start = Date.now();
         $.get(name, function(result) {
-            staticFileCache.store(name, result);
+           requestIdleCallback(function() {
+                staticFileCache.store(name, result);       
+           });
+        
             callback(result);
+            let end = Date.now();
+            if (end - start < 1000) {
+                setTimeout(function () {
+                    notification.trigger('notify-hide');    
+                }, 1000);
+            } else {
+                notification.trigger('notify-hide');    
+            }
+            
         }, 'json').fail(function(jqXHR, textStatus, errorThrown ) {
             Modal.showErrorGet(this.url, errorThrown);
         });    
@@ -1469,7 +1613,7 @@ staticFileCache = {
      */
     store: function(filename, data) {
         if (!localStorageAvailable) return;
-
+    
         try {
             // Convert to string if not already (may throw if bad data)
             if (typeof data !== 'string') {
@@ -1713,7 +1857,7 @@ Modal = {
             body: "<p>This link will allow anyone to visualize your "+name+"</p>"+
                   '<div class="input-group">' + 
                     '<span class="input-group-addon">🔗</span>' +
-                    '<input class="form-control linkInput" type="text" value="http://ffbeEquip.com/'+link+'"/>' + 
+                    '<input class="form-control linkInput" type="text" value="https://ffbeEquip.com/'+link+'"/>' +
                   '</div>'+
                   '<p class="hidden linkInputCopied">Link copied to your clipboard.</p>',
             withCancelButton: false,
@@ -1808,8 +1952,33 @@ function copyInputToClipboard($input)
     return successful;
 }
 
-$(function() {
+function adaptItemInventoryForMultipleRareEnchantments() {
+    Object.keys(itemInventory.enchantments).forEach(itemId => {
+        itemInventory.enchantments[itemId].forEach(enchantments => {
+            enchantments.forEach((value, index) => {
+                if (value == "rare") {
+                    enchantments[index] = "rare_3";
+                }
+            })
+        });
+    });
+}
 
+let waitingCallbacks = [];
+function registerWaitingCallback(waitingKeys, callback) {
+    waitingCallbacks.push({"keys":waitingKeys, "callback":callback});
+}
+function waitingCallbackKeyReady(key) {
+    waitingCallbacks.filter(wc => wc.keys.includes(key)).forEach(wc => {
+        wc.keys.splice(wc.keys.indexOf(key), 1);
+        if (wc.keys.length == 0) {
+            wc.callback();
+        }
+    })
+}
+
+$(function() {
+    $.notify.defaults({"globalPosition":"bottom right"});
     try {
         // Bust the whole localStorage in case of old array used in order to get a clean state
         // @TODO: can be removed after october 2018
@@ -1843,7 +2012,8 @@ $(function() {
         Modal.showErrorGet(this.url, errorThrown);
     });
     
-    if (window.location.href.indexOf("&o") > 0 || window.location.href.indexOf("?o") > 0) {
+    if ((window.location.href.indexOf("&o") > 0 || window.location.href.indexOf("?o") > 0) && window.location.hash.length > 1) {
+    //if ((window.location.href.indexOf("&o") > 0 || window.location.href.indexOf("?o") > 0)) {
         notLoaded();
     } else {
         $.get(server + '/itemInventory', function(result) {
@@ -1851,6 +2021,7 @@ $(function() {
             if (!itemInventory.enchantments) {
                 itemInventory.enchantments = {};
             }
+            adaptItemInventoryForMultipleRareEnchantments();
             sanitizeItemInventory();
             onUnitsOrInventoryLoaded();
         }, 'json').fail(function(jqXHR, textStatus, errorThrown ) {
@@ -1896,10 +2067,13 @@ $(function() {
                 notLoaded();
             }
         });
+        console.log("Starts to load owned espers");
         $.get(server + '/espers', function(result) {
             ownedEspers = result;
+            console.log("owned espers loaded");
             onUnitsOrInventoryLoaded();
         }, 'json').fail(function(jqXHR, textStatus, errorThrown ) {
+            console.log("error loading owned espers");
             $("#inventoryDiv").removeClass("Inventoryloading Inventoryloaded");
             if (notLoaded) {
                 notLoaded();

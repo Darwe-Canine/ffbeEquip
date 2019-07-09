@@ -21,6 +21,7 @@ class DataStorage {
         this.alreadyUsedEspers = [];
         this.itemInventory;
         this.availableTmr;
+        this.availableStmr;
         this.defaultWeaponEnhancement = null;
     }
     
@@ -122,7 +123,8 @@ class DataStorage {
             }
         } else if (formula.type == "condition") {
             this.addDesirableElementsFromImperilInFormula(formula.formula);    
-        } else if (formula.type != "elementCondition" &&  formula.type != "constant" && formula.type != "break" && formula.type != "imbue" && formula.type != "statsBuff" && formula.type != "value" && formula.type != "damage" && formula.type != "killers") {
+            this.addDesirableElementsFromImperilInFormula(formula.condition);
+        } else if (formula.type != "elementCondition" &&  formula.type != "constant" && formula.type != "chainMultiplier" && formula.type != "break" && formula.type != "imbue" && formula.type != "statsBuff" && formula.type != "value" && formula.type != "damage" && formula.type != "heal" && formula.type != "killers" && formula.type != "skillEnhancement" && formula.type != "mitigation") {
             this.addDesirableElementsFromImperilInFormula(formula.value1);
             this.addDesirableElementsFromImperilInFormula(formula.value2);
         }
@@ -135,6 +137,8 @@ class DataStorage {
         this.dualWieldSources = [];
         this.equipSources = [];
         this.weaponsByTypeAndHands = {};
+        this.availableTmr = null;
+        this.availableStmr = null;
         for (var i = weaponList.length; i--;) {
             this.weaponsByTypeAndHands[weaponList[i]] = {};
         }
@@ -169,6 +173,9 @@ class DataStorage {
             
             if (availableNumber > 0 && this.unitBuild != null && this.unitBuild.unit != null && item.tmrUnit && item.tmrUnit == this.unitBuild.unit.id) {
                 this.availableTmr = item;
+            }
+            if (availableNumber > 0 && this.unitBuild != null && this.unitBuild.unit != null && item.stmrUnit && item.stmrUnit == this.unitBuild.unit.id) {
+                this.availableStmr = item;
             }
             
             if (availableNumber > 0 && this.onlyUseOwnedItems && this.itemInventory && this.itemInventory.enchantments && this.itemInventory.enchantments[item.id]) {
@@ -236,16 +243,17 @@ class DataStorage {
                 if (weaponList.includes(type) || type == "accessory") {numberNeeded = 2}
                 if (type == "materia") {numberNeeded = 4}
                 var itemPool = new ItemPool(numberNeeded, this.unitBuild.involvedStats, ennemyStats, this.desirableElements, this.unitBuild.desirableItemIds, this.skillIds);
-                if (this.defaultWeaponEnhancement && this.defaultWeaponEnhancement.length > 0  && !this.onlyUseOwnedItems && weaponList.includes(type)) {
-                    this.dataByType[type].forEach(entry => entry.item = applyEnhancements(entry.item, this.defaultWeaponEnhancement));
-                }
+                /*if (this.defaultWeaponEnhancement && this.defaultWeaponEnhancement.length > 0 && weaponList.includes(type)) {
+                    this.dataByType[type].forEach(entry => {
+                        if (!entry.item.enhancements) {
+                            entry.item = applyEnhancements(entry.item, this.defaultWeaponEnhancement)
+                        }
+                    });
+                }*/
                 itemPool.addItems(this.dataByType[type]);
                 itemPool.prepare();
                 //var tree = ItemTreeComparator.sort(this.dataByType[type], numberNeeded, this.unitBuild, ennemyStats, this.desirableElements, this.unitBuild.desirableItemIds);
                 this.dataByType[type] = itemPool.getEntries();
-                /*for (var index = 0, lenChildren = tree.children.length; index < lenChildren; index++) {
-                    this.addEntriesToResult(tree.children[index], this.dataByType[type], 0, true);    
-                }*/
                 
             } else {
                 this.dataByType[type] = [{"item":getPlaceHolder(type),"available":numberNeeded}];  
@@ -272,9 +280,6 @@ class DataStorage {
         this.dualWieldSources = [];
         for (var i = types.length; i--;) {
             var itemPool = new ItemPool(1, this.unitBuild.involvedStats, ennemyStats, this.desirableElements, this.unitBuild.desirableItemIds, this.skillIds);
-            if (this.defaultWeaponEnhancement && this.defaultWeaponEnhancement.length > 0  && !this.onlyUseOwnedItems && weaponList.includes(types[i])) {
-                dualWieldByType[types[i]].forEach(entry => entry.item = applyEnhancements(entry.item, this.defaultWeaponEnhancement));
-            }
             itemPool.addItems(dualWieldByType[types[i]]);
             itemPool.prepare();
             this.dualWieldSources = this.dualWieldSources.concat(itemPool.getEntries().map(x => x.item));
@@ -310,13 +315,18 @@ class DataStorage {
     }*/
 
     getItemEntry(item, availableNumber = null, owned = false) {
+        let ownedNumber = 0;
+        if (owned) {
+            ownedNumber = this.getOwnedNumber(item).totalOwnedNumber
+        }
         return {
             "item":item, 
             "name":item.name, 
             "defenseValue":this.getDefenseValue(item),
             "mpValue":this.getMpValue(item),
             "available":availableNumber || this.getAvailableNumbers(item).available,
-            "owned": owned
+            "owned": owned,
+            "ownedNumber": ownedNumber
         };
     }
     
@@ -340,6 +350,9 @@ class DataStorage {
 
     prepareItem(item, baseValues, ennemyStats, availableNumber, ownedAvailableNumber, adventurersAvailable, alreadyAddedIds, equipable, pinnedItemIds, tmrAbilityEnhancedItem = false) {
         var added = false;
+        if (this.defaultWeaponEnhancement && this.defaultWeaponEnhancement.length > 0 && weaponList.includes(item.type) && !item.enhancements) {
+            item = applyEnhancements(item, this.defaultWeaponEnhancement)
+        }
         for (var index = 0, len = baseStats.length; index < len; index++) {
             item['total_' + baseStats[index]] = this.getStatValueIfExists(item, baseStats[index], baseValues[baseStats[index]].total);
         }
@@ -356,6 +369,10 @@ class DataStorage {
                 this.equipSources.push(item);
             } 
             if (this.itemCanBeOfUseForGoal(item, ennemyStats)) {
+                if (this.itemWithUnstackableSkillOnlyUsefulInOne(item, ennemyStats)) {
+                    availableNumber = Math.min(1, availableNumber);
+                    ownedAvailableNumber = Math.min(1, ownedAvailableNumber);
+                }
                 if (adventurerIds.includes(item.id)) { // Manage adventurers to only keep the best available
                     adventurersAvailable[item.id] = item;
                     return;
@@ -444,6 +461,7 @@ class DataStorage {
                 if (item.singleWieldingGL && item.singleWieldingGL[stats[index]]) return true;
                 if (item.singleWieldingOneHanded && item.singleWieldingOneHanded[stats[index]]) return true;
                 if (item.singleWieldingOneHandedGL && item.singleWieldingOneHandedGL[stats[index]]) return true;
+                if (item.dualWielding && item.dualWielding[stats[index]]) return true;
                 if (item.esperStatsBonus && item.esperStatsBonus[stats[index]]) return true;
             }
         }
@@ -458,6 +476,40 @@ class DataStorage {
         }
         if (this.skillIds.length > 0 && item.skillEnhancement) {
             if (this.skillIds.some(id => item.skillEnhancement[id])) return true;
+        }
+    }
+    
+    itemWithUnstackableSkillOnlyUsefulInOne(item, ennemyStats) {
+        if (item.notStackableSkills) {
+            var itemWithoutUnstackableSkills = JSON.parse(JSON.stringify(item));
+            Object.keys(itemWithoutUnstackableSkills.notStackableSkills).forEach(id => {
+                let skill = itemWithoutUnstackableSkills.notStackableSkills[id];
+                Object.keys(skill).forEach(stat => {
+                    this.removeStat(itemWithoutUnstackableSkills, stat, skill[stat]);
+                })
+            });
+            return this.itemCanBeOfUseForGoal(itemWithoutUnstackableSkills)
+        }
+        return false;
+    }
+    
+    removeStat(item, stat, value) {
+        if (typeof value === 'number') {
+            if (item[stat] == value) {
+                delete item[stat];
+            } else {
+                item[stat] -= value;
+            }
+        } else if (stat == "evade") {
+            if (value.physical) {
+                this.removeStat(item.evade, 'physical', value.physical);
+            }
+            if (value.magical) {
+                this.removeStat(item.evade, 'magical', value.magical);
+            }
+            if (!item.evade.physical && !item.evade.magical) {
+                delete item.evade;
+            }
         }
     }
     

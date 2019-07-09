@@ -30,14 +30,12 @@
     text-align: right;
 }
 
-#elementalResists input.buff {
+#elementalResists input.buff, #monsterDefensiveStats .buff {
     color: forestgreen;
-    font-weight: bold;
 }
 
-#elementalResists input.debuff {
+#elementalResists input.debuff, #monsterDefensiveStats .break {
     color: crimson;
-    font-weight: bold;
 }
 
 .unitSelectDiv {
@@ -228,7 +226,7 @@
 }
 
 #resultStats {
-    max-width: 600px;
+    max-width: 700px;
     margin-left: auto;
     margin-right: auto;
     margin-top: 10px;
@@ -317,6 +315,7 @@
 #monsterDefensiveStats {
     margin-bottom: 10px;
     display: flex;
+    flex-wrap: wrap;
 }
 
 #monsterDefensiveStats .input-group {
@@ -325,7 +324,7 @@
 }
 
 #monsterDefensiveStats input {
-    width: 60px;
+    width: 70px;
     text-align: right;
 }
 
@@ -347,11 +346,13 @@
 .conciseView .line {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .buildLine {
     display: table-row;
     border-top: 1px solid #ddd;
+    min-width: 250px;
 }
 
 .conciseView .buildLine {
@@ -525,12 +526,35 @@ i.img.img-slot-hand.leftHand {
 .unitStats .stat .baseStat {
     flex: 2;
 }
-.unitStats .stat.lbFillRate .baseStat,.unitStats .stat.lbShardsPerTurn .baseStat, .unitStats .stat.pMitigation .baseStat, .unitStats .stat.mMitigation .baseStat, .unitStats .stat.mitigation .baseStat  {
+.unitStats .stat.lbFillRate .baseStat,.unitStats .stat.lbShardsPerTurn .baseStat, .unitStats .stat.pMitigation .baseStat, .unitStats .stat.mMitigation .baseStat, .unitStats .stat.mitigation .baseStat, .unitStats .stat.drawAttacks .baseStat, , .unitStats .stat.lbDamage .baseStat   {
     flex: 3;
 }
 
 .unitStats .stat .pots {
     flex: 1;
+}
+
+.potSwitcher {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.potSwitcher .btn.btn-default{
+  padding: 2px 6px;
+}
+
+.unitStats .stat .pots input.poted {
+  color: darkgreen;
+}
+.unitStats .stat .pots input.maxPot {
+  color: darkblue;
+}
+.unitStats .stat .pots input.door {
+  color: darkred;
+}
+.unitStats .stat .pots input.maxDoor {
+  color: darkmagenta;
 }
 
 .unitStats .stat .buff {
@@ -576,6 +600,7 @@ i.img.img-slot-hand.leftHand {
     right: 5px;
     line-height: 34px;
     opacity: 0.6;
+    z-index: 2;
 }
 
 .inputWithIcon input {
@@ -812,6 +837,15 @@ i.img.img-slot-hand.leftHand {
     margin-right: 6px;
 }
 
+.goal .section.chainMultiplier input {
+    width: 100px;
+}
+
+.goal .section.chainMultiplier  .ffbeChainLink {
+    line-height: 34px;
+    margin-left: 10px;
+}
+
 .select2-results__option,
 .select2-selection__rendered {
     position: relative;
@@ -985,6 +1019,17 @@ i.img.img-slot-hand.leftHand {
 
 #defaultWeaponEnhancement .btn {
     padding: 0 6px;
+}
+
+.paramChallenge button {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.quotaWarning {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
 }
 
 @media (max-width: 991px) {

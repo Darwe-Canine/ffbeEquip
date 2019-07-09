@@ -131,6 +131,7 @@
         </div>
 
         <div class="container-fluid">
+            <div class="col-xs-12 center quotaWarning hidden"><span class="label label-warning">FFBE Equip is under heavy load, and exceeded its quota to access data, so you may encounter difficulties using it. I hope it will be solved soon.</span></div>
             <button class="hidden-md hidden-lg sideBarButton" type="button" onclick="event.stopPropagation();document.body.scrollTop = 0; document.documentElement.scrollTop = 0; $('body').toggleClass('expanded'); $('#actionButtonIcon').toggleClass('glyphicon-tasks glyphicon-th-large');">
                 <span id="actionButtonIcon" class="glyphicon glyphicon-tasks"></span>
             </button>
@@ -192,12 +193,17 @@
                         <div class="simpleConditions hidden">
                             <a id="simpleConditionsButton" href="#simpleConditionsList" class="btn btn-default" data-toggle="collapse" aria-expanded="false"><div data-toggle="tooltip" data-original-title="Display/Hide additional build conditions"><span class="glyphicon glyphicon-plus"></span><span class="glyphicon glyphicon-minus"></span></div></a>
                             <div id="simpleConditionsList" class="collapse">
+                                <div class="section chainMultiplier">
+                                    <span class="title">Chain Mult.</span>
+                                    <input type="text" class="choice form-control">
+                                    <span class="ffbeChainLink">(get it from <a href="https://ffbe-chain.com/" target="_blank">FFBE-Chain</a>)</span>
+                                </div>
                                 <div class="section">
                                     <span class="title">Force element</span>
                                     <div class="btn-group choice" data-toggle="buttons" id="forcedElements"></div>
                                 </div>
                                 <div class="section">
-                                    <span class="title btn btn-default" data-toggle="tooltip" data-original-title='Switch between "All ailment", "Disabling ailments" and "No ailments"' onclick="switchSimpleConditionAilments()">Ailment Immunity</span>
+                                    <span class="title link" data-toggle="tooltip" data-original-title='Switch between "All ailment", "Disabling ailments" and "No ailments"' onclick="switchSimpleConditionAilments()">Ailment Immunity</span>
                                     <div class="btn-group choice" data-toggle="buttons" id="ailmentImunities"></div>
                                 </div>
                                 <div class="section elementalResists">
@@ -239,10 +245,47 @@
                                 </div>
                                 <div class="section">
                                     <span class="title">Evasion</span>
-                                    <div id="simpleConditionEvasion" class="btn-group" data-toggle="buttons">
+                                    <div id="simpleConditionVarious" class="btn-group" data-toggle="buttons">
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel panel-default goal paramChallenge hidden">
+                    <div class="panel-heading">
+                        <div class="line">
+                            <span class="goalLabel">Param challenge</span>
+                            <div class="paramChallengeSelectDiv">
+                                <select id="paramChallengeSelect" name="paramChallenge" class="form-control">
+                                    <option value="HP_25500">HP > 25500</option>
+                                    <option value="MP_1850">MP > 1850</option>
+                                    <option value="ATK_2650">ATK > 2650</option>
+                                    <option value="DEF_1650">DEF > 1650</option>
+                                    <option value="MAG_2000">MAG > 2000</option>
+                                    <option value="SPR_1850">SPR > 1850</option>
+                                    <option value="HP_14000">HP > 14000</option>
+                                    <option value="MP_1100">MP > 1100</option>
+                                    <option value="ATK_1650">ATK > 1650</option>
+                                    <option value="DEF_1000">DEF > 1000</option>
+                                    <option value="MAG_1200">MAG > 1200</option>
+                                    <option value="SPR_1100">SPR > 1100</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="paramChallengeButton">Find a way !</button>
+                            
+                        </div>
+                        <div class="line">
+                            <span class="goalLabel"></span>
+                            <div>
+                                <div><input type="radio" id="sevenStar" name="paramChallengeUnitChoice" value="sevenStar" checked> Only 7★ units</div>
+                                <div><input type="radio" id="potentialSevenStar" name="paramChallengeUnitChoice" value="potentialSevenStar"> 7★ units and potential 7★ units (2 or more 5★ owned)</div>
+                                <div><input type="radio" id="rainbows" name="paramChallengeUnitChoice" value="rainbows"> All rainbow units</div>
+                            </div>
+                        </div>
+                        <div class="line">
+                            <span class="goalLabel"></span>
+                            <span>(Units will be assumed fully leveled, fully potted, and with relevent abilities enhanced)</span>
                         </div>
                     </div>
                 </div>
@@ -301,13 +344,11 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="HP base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="HP pots"/>
                                 </div>
-                                <div class="inputWithIcon withPercent buff" style="visibility: hidden">
-                                    <span class="leftIcon glyphicon glyphicon-upload" title="buff"></span>
-                                    <span class="rightIcon">%</span>
-                                    <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="HP buff"/>
+                                <div class="inputWithIcon withPercent buff potSwitcher">
+                                    <span class="btn btn-default" onclick="switchPots()">pots</span>
                                 </div>
                             </div>
                             <div class="stat mp">
@@ -316,7 +357,7 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="MP base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="MP pots"/>
                                 </div>
                                 <div class="inputWithIcon withPercent buff " style="visibility: hidden">
@@ -331,7 +372,7 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="ATK base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="ATK pots"/>
                                 </div>
                                 <div class="inputWithIcon withPercent buff">
@@ -346,7 +387,7 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="MAG base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="MAG pots"/>
                                 </div>
                                 <div class="inputWithIcon withPercent buff">
@@ -361,7 +402,7 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="DEF base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="DEF pots"/>
                                 </div>
                                 <div class="inputWithIcon withPercent buff">
@@ -376,7 +417,7 @@
                                     <input type="text" class="form-control" placeholder="0" readonly data-toggle="tooltip" data-original-title="SPR base stat"/>
                                 </div>
                                 <div class="inputWithIcon pots">
-                                    <span class="leftIcon glyphicon glyphicon-plus" title="pots"></span>
+                                    <span class="leftIcon glyphicon glyphicon-plus link" title="pots"></span>
                                     <input type="text" class="form-control" placeholder="0" data-toggle="tooltip" data-original-title="SPR pots"/>
                                 </div>
                                 <div class="inputWithIcon withPercent buff">
@@ -438,6 +479,28 @@
                                     <input type="text" class="form-control" placeholder="0"/>
                                 </div>
                             </div>
+                            <div class="stat drawAttacks">
+                                <div class="inputWithIcon baseStat">
+                                    <span class="leftIcon">Draw attacks</span>
+                                    <input type="text" class="form-control" tabindex="-1" readonly/>
+                                </div>
+                                <div class="inputWithIcon withPercent buff">
+                                    <span class="leftIcon glyphicon glyphicon-upload" title="buff"></span>
+                                    <span class="rightIcon">%</span>
+                                    <input type="text" class="form-control" placeholder="0"/>
+                                </div>
+                            </div>
+                            <div class="stat lbDamage">
+                                <div class="inputWithIcon baseStat">
+                                    <span class="leftIcon">+LB damage</span>
+                                    <input type="text" class="form-control" tabindex="-1" readonly/>
+                                </div>
+                                <div class="inputWithIcon withPercent buff">
+                                    <span class="leftIcon glyphicon glyphicon-upload" title="buff"></span>
+                                    <span class="rightIcon">%</span>
+                                    <input type="text" class="form-control" placeholder="0"/>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-xs-12 unitAttackElement">
                             <div class="col-xs-3 text-right">Imbue(s):</div>
@@ -471,7 +534,6 @@
                                 <div id="tryReduceOverCap" class="col-xs-12 checkboxGroup">
                                     <label>
                                         <input type="checkbox"/>
-                                        <span class="experimentalTag">Experimental</span>
                                         Try to reduce overcap in favor of &nbsp;
                                     </label>
                                     <select>
@@ -484,10 +546,17 @@
                                         <option value="lbPerTurn">LB/turn</option>
                                     </select>
                                 </div>
+                                <div id="forceTmrAbility" class="col-xs-12 checkboxGroup hidden">
+                                    <label>
+                                        <input type="checkbox"/>
+                                        <span class="experimentalTag">Experimental</span>
+                                        Force use of TMR or STMR
+                                    </label>
+                                </div>
                                 <div class="col-xs-12 col-lg-6 checkboxGroup">
                                     <label>
                                         <input type="checkbox" id="useNewJpDamageFormula"/>
-                                        Use new JP damage formula
+                                        Use new damage formula
                                     </label>
                                 </div>
                                 <div class="col-xs-12">
@@ -508,22 +577,34 @@
                         <a id="monsterListLink" class="buttonLink hidden" onclick="showMonsterList();">Monster list</a>
                     </div>
                     <div class="panel-body">
-                        <div id="negativeBreakImperilWarning"><span class="label label-danger"><span class="glyphicon glyphicon-warning-sign"></span> You entered negative breaks or imperils. Break and imperil usually are positive numbers. You are currently buffing the enemy</span></div>
+                        <div id="negativeBreakImperilWarning" class="hidden"><span class="label label-danger"><span class="glyphicon glyphicon-warning-sign"></span> You entered negative breaks or imperils. Break and imperil usually are positive numbers. You are currently buffing the enemy</span></div>
                         <div id="monsterDefensiveStats">
                             <div class="input-group def">
                                 <span class="input-group-addon">DEF</span>
                                 <input type="text" class="form-control stat" placeholder="100" data-toggle="tooltip" data-original-title="Base DEF">
-                                <div class="inputWithIcon">
-                                    <span class="leftIcon glyphicon glyphicon-download" title="break"></span>
-                                    <input class="form-control break" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="DEF Break (positive)"/>
+                                <div class="inputWithIcon withPercent">
+                                    <span class="leftIcon glyphicon glyphicon-download breakIcon link" title="break" onclick="toogleMonsterBreakability('def')"></span>
+                                    <input class="form-control break noRadius" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="DEF Break (positive)"/>
+                                    <span class="rightIcon">%</span>
+                                </div>
+                                <div class="inputWithIcon withPercent">
+                                    <span class="leftIcon glyphicon glyphicon-upload" title="buff"></span>
+                                    <input class="form-control buff rightRadius" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="DEF Buff (positive)"/>
+                                    <span class="rightIcon">%</span>
                                 </div>
                             </div>
                             <div class="input-group spr">
                                 <span class="input-group-addon">SPR</span>
                                 <input type="text" class="form-control stat" placeholder="100" data-toggle="tooltip" data-original-title="Base SPR">
-                                <div class="inputWithIcon">
-                                    <span class="leftIcon glyphicon glyphicon-download" title="break"></span>
-                                    <input class="form-control break" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="SPR Break (positive)"/>
+                                <div class="inputWithIcon withPercent">
+                                    <span class="leftIcon glyphicon glyphicon-download breakIcon link" title="break" onclick="toogleMonsterBreakability('spr')"></span>
+                                    <input class="form-control break noRadius" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="SPR Break (positive)"/>
+                                    <span class="rightIcon">%</span>
+                                </div>
+                                <div class="inputWithIcon withPercent">
+                                    <span class="leftIcon glyphicon glyphicon-upload" title="buff"></span>
+                                    <input class="form-control buff rightRadius" type="text" placeholder="0" onkeypress="return isNumberOrMinus(event)" data-toggle="tooltip" data-original-title="DEF Buff (positive)"/>
+                                    <span class="rightIcon">%</span>
                                 </div>
                             </div>
                         </div>
@@ -638,7 +719,7 @@
                         <div class="checkboxGroup"><input id="excludePremium" type="checkbox"/><label>Exclude Premium items</label></div>
                         <div class="checkboxGroup"><input id="excludeTMR5" type="checkbox"/><label>Exclude TMR of base 5* units</label></div>
                         <div class="checkboxGroup"><input id="excludeSTMR" type="checkbox"/><label>Exclude STMR</label></div>
-                        <div class="checkboxGroup"><input id="excludeNotReleasedYet" type="checkbox" checked="true"><label>Exclude not released yet equipments</label></div>
+                        <div class="checkboxGroup"><input id="excludeNotReleasedYet" type="checkbox" checked="true"><label>Exclude unreleased equipment</label></div>
                         <div id="defaultWeaponEnhancement" class="item">Weapon enhancement : <span class="display"></span><button class="btn btn-default" onclick="modifyDefaultWeaponEnhancement()">Set default</button></div>
                         
                         <div><a class="link" onclick="displayEquipableItemList();">Select items to exclude</a></div>
@@ -691,6 +772,9 @@
                                 <div class="col-xs-5 lbPerTurn"><div class="col-xs-6 stat">LB/turn</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
                                 <div class="col-xs-5 evoMag"><div class="col-xs-6 stat">EVO Mag</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
                                 <div class="col-xs-5 accuracy"><div class="col-xs-6 stat">Accuracy</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
+                                <div class="col-xs-5 drawAttacks"><div class="col-xs-6 stat">D. Attacks</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
+                                <div class="col-xs-5 jumpDamage"><div class="col-xs-6 stat">Jump D.</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
+                                <div class="col-xs-5 lbDamage"><div class="col-xs-6 stat">LB Damage</div><div class="col-xs-6 text-right value"></div></div><div class="col-xs-1"></div>
                                 <div class="resists">
                                     <div class="elements"></div>
                                     <div class="ailments"></div>
@@ -734,6 +818,12 @@
                                                     <span class="glyphicon glyphicon-list"></span> Build as text
                                                 </a>
                                             </li>
+                                            <li>
+                                                <a class="buildAsText link" onclick="showAllBuildsAsText()">
+                                                    <span class="glyphicon glyphicon-list"></span> Builds as text (all units)
+                                                </a>
+                                            </li>
+                                            
                                         </ul>
                                     </div>
                                 </div>
@@ -1151,7 +1241,7 @@
                                             <tr><td class="token">M_EVADE</td><td>Magical evade</td></tr>
                                             <tr><td class="token">EVO_MAG</td><td>Boost to Evocation damage</td></tr>
                                             <tr><td class="token">LB</td><td>Number of LB point generated each turn. Note that this number is heavilly dependant on the expected number of LB shards gained per turn.</td></tr>
-                                            <tr><td class="token">R_FIRE, R_ICE, R_THUNDER, R_WATER, R_EARTH, R_WIND, R_LIGHT, R_DARK</td><td>Corresponding elemental resistance</td></tr>
+                                            <tr><td class="token">R_FIRE, R_ICE, R_LIGHTNING, R_WATER, R_EARTH, R_WIND, R_LIGHT, R_DARK</td><td>Corresponding elemental resistance</td></tr>
                                             <tr><td class="token">R_POISON, R_BLIND, R_SLEEP, R_SILENCE, R_PARALYSIS, R_CONFUSION, R_DISEASE, R_PETRIFICATION, R_DEATH</td><td>Corresponding ailment resistance</td></tr>
                                         </tbody>
                                     </table>
@@ -1166,7 +1256,7 @@
                                             <tr><td class="token">I_POISON, I_BLIND, I_SLEEP, I_SILENCE, I_PARALYSIS, I_CONFUSION, I_DISEASE, I_PETRIFICATION, I_DEATH</td><td>I_XXX is a shortcut for R_XXX > 100</td></tr>
                                             <tr><td class="token">I_AILMENTS</td><td>This condition is a shortcut for all R_&lt;ailment&gt; > 100</td></tr>
                                             <tr><td class="token">I_DISABLE</td><td>This condition is a shortcut for I_SLEEP; I_PARALYSIS; I_CONFUSION; I_PETRIFICATION</td></tr>
-                                            <tr><td class="token">E_FIRE, E_ICE, E_THUNDER, E_WATER, E_EARTH, E_WIND, E_LIGHT, E_DARK</td><td>Those special conditions will force the resulting build to have the corresponding element(s) and no other elements</td></tr>
+                                            <tr><td class="token">E_FIRE, E_ICE, E_LIGHTNING, E_WATER, E_EARTH, E_WIND, E_LIGHT, E_DARK</td><td>Those special conditions will force the resulting build to have the corresponding element(s) and no other elements</td></tr>
                                             <tr><td class="token">E_NONE</td><td>Force a none elemental build. This condition is not compatible with E_FIRE, E_ICE, ...</td></tr>
                                         </tbody>
                                     </table>
@@ -1192,7 +1282,8 @@
                         <div class="enhancementTypes">
                             <div class="enhancementType">
                                 <div class="title">Rare</div>
-                                <div class="rareEnhancement value rare" onclick="toggleItemEnhancement('rare')">HP/ATK +15%</div>
+                                <div class="rareEnhancement value rare_3" onclick="toggleItemEnhancement('rare_3')">HP/ATK +15%</div>
+                                <div class="rareEnhancement value rare_4" onclick="toggleItemEnhancement('rare_4')">HP/ATK +20%</div>
                             </div>
                             <div class="enhancementType">
                                 <div class="title">HP</div>
@@ -1303,6 +1394,7 @@
                 integrity="sha384-+pWnyi8LtZx+cgXfD2arWgUX7pHIaEL215cEPPk9WrsegNlgvDL9DNjaqsceQq6o" crossorigin="anonymous"></script>
 		<script src="lib/jquery.ba-throttle-debounce.min.js"></script>
         <script src="lib/notify.min.js"></script>
+        <script src="lib/jjv.js"></script>
         <script src="/clientConfig"></script>
         <script src="constants.js"></script>
         <script src="common.js"></script>

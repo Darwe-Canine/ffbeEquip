@@ -49,7 +49,7 @@ class UnitBuild {
     
     getPartialDualWield() {
         for (var index = this.unit.skills.length; index--;) {
-            if (this.unit.skills[index].partialDualWield && (!this.unit.skills[index].levelCondition || this.unit.skills[index].levelCondition <= this._level)) {
+            if (this.unit.skills[index] && this.unit.skills[index].partialDualWield && (!this.unit.skills[index].levelCondition || this.unit.skills[index].levelCondition <= this._level)) {
                 if ((this.build[0] == null || this.unit.skills[index].partialDualWield.includes(this.build[0].type))
                     && (this.build[1] == null || this.unit.skills[index].partialDualWield.includes(this.build[1].type))) {
                     return this.unit.skills[index].partialDualWield;
@@ -74,10 +74,7 @@ class UnitBuild {
                 if (this.unit.skills[index].equipedConditions && this.unit.skills[index].equipedConditions.length == 1) {
                     for (var itemIndex = 0; itemIndex < 10; itemIndex++) {
                         if (itemIndex != ignoreSlot) {
-                            if (this.fixedItems[itemIndex] && this.unit.skills[index].equipedConditions.includes(this.fixedItems[itemIndex].id)) {
-                                return true;
-                            }
-                            if (this.build[itemIndex] && this.unit.skills[index].equipedConditions.includes(this.build[itemIndex].id)) {
+                            if (this.build[itemIndex] && (Array.isArray(this.unit.skills[index].equipedConditions) && this.unit.skills[index].equipedConditions[0].includes(this.build[itemIndex].id) || this.unit.skills[index].equipedConditions.includes(this.build[itemIndex].id))) {
                                 return true;
                             }
                         }
@@ -102,8 +99,10 @@ class UnitBuild {
     
     hasDualWieldIfItemEquiped(itemId) {
         for (var index in this.unit.skills) {
-            if (this.unit.skills[index].special && this.unit.skills[index].special.includes("dualWield") && this.unit.skills[index].equipedConditions && this.unit.skills[index].equipedConditions.length == 1 && this.unit.skills[index].equipedConditions.includes(itemId)) {
-                return true;
+            if (this.unit.skills[index].special && this.unit.skills[index].special.includes("dualWield") && this.unit.skills[index].equipedConditions && this.unit.skills[index].equipedConditions.length == 1) {
+                if (Array.isArray(this.unit.skills[index].equipedConditions) && this.unit.skills[index].equipedConditions[0].includes(itemId) || this.unit.skills[index].equipedConditions.includes(itemId)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -139,7 +138,11 @@ class UnitBuild {
                 if (skill.equipedConditions) {
                     for (var j = skill.equipedConditions.length; j--;) {
                         if (!typeList.includes(skill.equipedConditions[j]) && !elementList.includes(skill.equipedConditions[j]) && !this.desirableItemIds.includes(skill.equipedConditions[j])) {
-                            this.desirableItemIds.push(skill.equipedConditions[j]);
+                            if (Array.isArray(skill.equipedConditions[j])) {
+                                this.desirableItemIds = this.desirableItemIds.concat(skill.equipedConditions[j]);
+                            } else {
+                                this.desirableItemIds.push(skill.equipedConditions[j]);
+                            }
                         }
                     }
                 }
@@ -162,6 +165,9 @@ class UnitBuild {
         var slot = -1;
         if (weaponList.includes(item.type)) {
             if (this.fixedItems[0] && this.fixedItems[1]) {
+                return -1;
+            }
+            if(forceDoubleHand && (this.fixedItems[0] || this.fixedItems[1])){
                 return -1;
             }
             if (!this.fixedItems[0]) {
@@ -262,6 +268,14 @@ class UnitBuild {
                 }
             } else if (formula.value.mecanism == "hybrid") {
                 this.addToInvolvedStats(["weaponElement","physicalKiller","meanDamageVariance", "atk", "mag"]);
+            } else if (formula.value.mecanism == "summonerSkill"){
+                this.addToInvolvedStats(["evoMag"]);
+                if (formula.value.magSplit > 0) {
+                    this.addToInvolvedStats(["mag"]);
+                }
+                if (formula.value.sprSplit > 0) {
+                    this.addToInvolvedStats(["spr"]);
+                }
             }
         } else if (formula.type == "value") {
             var name = formula.name;
@@ -283,23 +297,28 @@ class UnitBuild {
             this.calculateInvolvedStats(formula.condition);
             this.calculateInvolvedStats(formula.formula);  
         } else if (this.unit && formula.type == ">" && formula.value1.type == "value" && formula.value2.type == "constant") {
-            
-            var applicableSkills = [];
-            for (var skillIndex = this.unit.skills.length; skillIndex--;) {
-                var skill = this.unit.skills[skillIndex];
-                if (areConditionOK(skill, this.fixedItems, this._level)) {
-                    applicableSkills.push(skill);
+            if (formula.value1.name.startsWith("resist|") && ailmentList.includes(formula.value1.name.substr(7, formula.value1.name.length - 15))) {
+                var applicableSkills = [];
+                for (var skillIndex = this.unit.skills.length; skillIndex--;) {
+                    var skill = this.unit.skills[skillIndex];
+                    if (areConditionOK(skill, this.fixedItems, this._level)) {
+                        applicableSkills.push(skill);
+                    }
                 }
-            }
-            
-            var currentBuildWithFixedItems = this.fixedItems.concat(applicableSkills);
-            
-            var value = calculateStatValue(currentBuildWithFixedItems, formula.value1.name, this).total;
-            if (value < formula.value2.value) {
-                // only consider value1 if this criteria is not already met
+
+                var currentBuildWithFixedItems = this.fixedItems.concat(applicableSkills);
+
+                var value = calculateStatValue(currentBuildWithFixedItems, formula.value1.name, this).total;
+                if (value < formula.value2.value) {
+                    // only consider value1 if this criteria is not already met
+                    this.calculateInvolvedStats(formula.value1);
+                }
+            } else {
                 this.calculateInvolvedStats(formula.value1);
             }
-        } else if (formula.type != "elementCondition" &&  formula.type != "constant" && formula.type != "imperil" && formula.type != "break" && formula.type != "imbue" && formula.type != "statsBuff" && formula.type != "killers") {
+        } else if (formula.type=="heal"){
+            this.addToInvolvedStats(["spr","mag"])
+        } else if (formula.type != "elementCondition" &&  formula.type != "constant" && formula.type != "chainMultiplier" && formula.type != "imperil" && formula.type != "break" && formula.type != "imbue" && formula.type != "statsBuff" && formula.type != "killers" && formula.type != "skillEnhancement" && formula.type != "lbFill") {
             this.calculateInvolvedStats(formula.value1);
             this.calculateInvolvedStats(formula.value2);
         }
@@ -373,12 +392,26 @@ class UnitBuild {
         if(this._tdwCap) {
             return this._tdwCap.value;
         } else {
-            if (this.unit.skills.some(skill => skill.improvedDW && (!skill.levelCondition || skill.levelCondition <= this._level))) {
+            if (server == "JP") {
                 this._tdwCap = { "value": 2};
             } else {
-                this._tdwCap = { "value": 1};
+                if (this.hasDualWieldMastery()) {
+                    this._tdwCap = { "value": 2};
+                } else {
+                    this._tdwCap = { "value": 1};
+                }
             }
             return this._tdwCap.value;
+        }
+    }
+    
+    hasDualWieldMastery() {
+        for (var index in this.unit.skills) {
+            if (!this.unit.skills[index].levelCondition || this.unit.skills[index].levelCondition <= this._level) {
+                if (this.unit.skills[index].improvedDW) {
+                    return true;
+                }
+            }
         }
     }
 }

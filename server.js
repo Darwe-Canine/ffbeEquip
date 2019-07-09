@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const sessions = require('client-sessions');
 const helmet = require('helmet');
 const mime = require('mime-types');
+var cors = require('cors')
 
 const config = require('./config.js');
 const firebase = require('./server/routes/firebase.js');
@@ -29,6 +30,17 @@ app.use(helmet.hsts({
   includeSubDomains: true,
   preload: true,
 }));
+
+let corsOptions = {
+  origin: 'https://lyrgard.github.io',
+}
+if (!config.isProd && process.env.DEV_USE_DIST != "yes") {
+    corsOptions.origin = [corsOptions.origin, 'http://localhost:4444', 'http://localhost:3001'];
+}
+console.log(!config.isProd && process.env.DEV_USE_DIST != "yes");
+console.log(corsOptions);
+
+app.use(cors(corsOptions));
 
 var cspDirectives = {
   defaultSrc: ["'none'"],

@@ -5,9 +5,12 @@ var saveNeeded = false;
 var onlyShowOwnedUnits = false;
 var unitSearch = [];
 var releasedUnits;
+var dataById;
 
-var unitSearchFilters = ["imperils","breaks","elements","ailments","imbues","physicalKillers","magicalKillers", "tankAbilities"];
+var unitSearchFilters = ["imperils","breaks","elements","ailments","imbues","physicalKillers","magicalKillers", "tankAbilities", "mitigation"];
 
+var baseRarity;
+var maxRarity;
 var imperils;
 var breaks;
 var elements;
@@ -16,8 +19,13 @@ var imbues;
 var physicalKillers;
 var magicalKillers;
 var tankAbilities;
+var mitigation;
+
+var fullyDisplayedUnits = [];
 
 var defaultFilter = {
+    "baseRarity": [],
+    "maxRarity": [],
     "imperils": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "lb", "counter"]},
     "breaks": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "lb", "counter"]},
     "elements": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "passives", "lb", "counter"]},
@@ -26,6 +34,7 @@ var defaultFilter = {
     "physicalKillers": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "passives", "lb"]},
     "magicalKillers": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "passives", "lb"]},
     "tankAbilities": {values: [], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "passives", "lb"]},
+    "mitigation":{values:[], "targetAreaTypes": ["SELF", "ST", "AOE"], "skillTypes": ["actives", "passives", "lb"]}
 };
 
 // Main function, called at every change. Will read all filters and update the state of the page (including the results)
@@ -35,7 +44,9 @@ var update = function() {
 	updateFilterHeadersDisplay();
     updateHash();
     
-    if (searchText.length == 0 && types.length == 0 && elements.values.length == 0 && ailments.values.length == 0 && physicalKillers.values.length == 0 && magicalKillers.values.length == 0 && imperils.values.length == 0 && breaks.values.length == 0 && imbues.values.length == 0 && tankAbilities.values.length == 0) {
+
+    if (searchText.length == 0 && types.length == 0 && elements.values.length == 0 && ailments.values.length == 0 && physicalKillers.values.length == 0 && magicalKillers.values.length == 0 && imperils.values.length == 0 && breaks.values.length == 0 && imbues.values.length == 0 && tankAbilities.values.length == 0 && mitigation.values.length == 0 && baseRarity.length == 0 && maxRarity.length == 0) {
+
 		// Empty filters => no results
         $("#results").html("");
         $("#results").addClass("notSorted");
@@ -44,14 +55,15 @@ var update = function() {
     }
     
 	// filter, sort and display the results
-    displayUnits(sortUnits(filterUnits(unitSearch, onlyShowOwnedUnits, searchText, types, elements, ailments, physicalKillers, magicalKillers, breaks)));
+    displayUnits(sortUnits(filterUnits(unitSearch, onlyShowOwnedUnits, searchText, types, elements, ailments, physicalKillers, magicalKillers, breaks, baseRarity, maxRarity)));
 	
 	// If the text search box was used, highlight the corresponding parts of the results
     $("#results").unmark({
         done: function() {
             if (searchText && searchText.length != 0) {
-                searchText.split(" ").forEach(function (token) {
-                    $("#results").mark(token);
+                getSearchTokens(searchText).forEach(function (token) {
+                    
+                    $("#results").mark(token, {"separateWordSearch": false, "wildcards":"enabled"});
                 });
             }
         }
@@ -59,23 +71,29 @@ var update = function() {
 }
 
 // Filter the items according to the currently selected filters. Also if sorting is asked, calculate the corresponding value for each item
-var filterUnits = function(searchUnits, onlyShowOwnedUnits = true, searchText = "", types = [], elements = [], ailments = [], physicalKillers = [], magicalKillers = [], breaks = []) {
+var filterUnits = function(searchUnits, onlyShowOwnedUnits = true, searchText = "", types = [], elements = [], ailments = [], physicalKillers = [], magicalKillers = [], breaks = [], baseRarity = [], maxRarity = []) {
     var result = [];
     for (var index = 0, len = searchUnits.length; index < len; index++) {
         var unit = searchUnits[index];
         if (releasedUnits[unit.id]) {
-            if (searchText.length == 0 || units[unit.id].name.toLowerCase().indexOf(searchText) >= 0 ) {
-                if (!onlyShowOwnedUnits || ownedUnits && ownedUnits[unit.id]) {
-                    if (types.length == 0 || includeAll(unit.equip, types)) {
-                        if (matchesCriteria(elements, unit, "elementalResist")) {
-                            if (matchesCriteria(ailments, unit, "ailmentResist")) {
-                                if (matchesCriteria(physicalKillers, unit, "physicalKillers")) {
-                                    if (matchesCriteria(magicalKillers, unit, "magicalKillers")) {
-                                        if (matchesCriteria(imperils, unit, "imperil")) {
-                                            if (matchesCriteria(breaks, unit, "break")) {
-                                                if (matchesCriteria(imbues, unit, "imbue")) {
-                                                    if (matchesCriteria(tankAbilities, unit, null, true)) {
-                                                        result.push({"searchData": unit, "unit": units[unit.id]});
+            if (!onlyShowOwnedUnits || ownedUnits && ownedUnits[unit.id]) {
+                if (baseRarity.length == 0 || baseRarity.includes(unit.minRarity)) {
+                    if (maxRarity.length == 0 || maxRarity.includes(unit.maxRarity)) {
+                        if (types.length == 0 || includeAll(unit.equip, types)) {
+                            if (matchesCriteria(elements, unit, "elementalResist")) {
+                                if (matchesCriteria(ailments, unit, "ailmentResist")) {
+                                    if (matchesCriteria(physicalKillers, unit, "physicalKillers")) {
+                                        if (matchesCriteria(magicalKillers, unit, "magicalKillers")) {
+                                            if (matchesCriteria(imperils, unit, "imperil")) {
+                                                if (matchesCriteria(breaks, unit, "break")) {
+                                                    if (matchesCriteria(imbues, unit, "imbue")) {
+                                                        if (matchesCriteria(tankAbilities, unit, null, true)) {
+                                                            if(matchesCriteria(mitigation, unit, null, true)) {
+                                                                if (searchText.length == 0 || containsText(searchText, units[unit.id])) {
+                                                                    result.push({"searchData": unit, "unit": units[unit.id]});
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -90,10 +108,11 @@ var filterUnits = function(searchUnits, onlyShowOwnedUnits = true, searchText = 
         }
     }
     return result;
-};
+}
 
 function matchesCriteria(criteria, unit, unitProperty, acceptZero = false) {
     result = false;
+    var dataArr=[]
     if (criteria.values.length == 0) {
         return true;
     }
@@ -115,7 +134,8 @@ function matchesCriteria(criteria, unit, unitProperty, acceptZero = false) {
                     dataToCheck = dataToCheck[unitProperty];
                 }
                 if (Array.isArray(dataToCheck)) {
-                    if (includeAll(criteria.values, dataToCheck)) {
+                    dataArr.push(...dataToCheck)
+                    if (includeAll(dataArr, criteria.values)) {
                         return true;
                     }
                 } else {
@@ -222,7 +242,19 @@ function sortUnits(units) {
                 return 1
             }
         }
-        
+        if (mitigation.values.length > 0) {
+            var value1 = 0;
+            var value2 = 0;
+            for (var i = mitigation.values.length; i--;) {
+                value1 += getValue(unit1.searchData, null, mitigation, i);
+                value2 += getValue(unit2.searchData, null, mitigation, i);
+            }
+            if (value1 > value2) {
+                return -1;
+            } else if (value2 > value1) {
+                return 1
+            }
+        }
         
         return unit1.unit.name.localeCompare(unit2.unit.name);
     });
@@ -273,6 +305,9 @@ var containAllKeyPositive = function(object, array, acceptZero = false) {
 var readFilterValues = function() {
 	searchText = $("#searchText").val().toLocaleLowerCase();
     
+    baseRarity = getSelectedValuesFor("baseRarity").map(parseInt);
+    maxRarity = getSelectedValuesFor("maxRarity").map(parseInt);
+    
     types = getSelectedValuesFor("types");
     
     elements.values = getSelectedValuesFor("elements");
@@ -306,18 +341,24 @@ var readFilterValues = function() {
     tankAbilities.values = getSelectedValuesFor("tankAbilities");
     tankAbilities.skillTypes = getSelectedValuesFor("tankAbilitiesSkillTypes");
     
+    mitigation.values = getSelectedValuesFor("mitigation");
+    mitigation.targetAreaTypes = getSelectedValuesFor("mitigationTargetAreaTypes");
+    mitigation.skillTypes = getSelectedValuesFor("mitigationSkillTypes");
+    
     onlyShowOwnedUnits = $("#onlyShowOwnedUnits").prop('checked');
 }
 
 // Hide or show the "unselect all", "select unit weapons" and so on in the filter headers
 var updateFilterHeadersDisplay = function() {
+    $(".rarity .unselectAll").toggleClass("hidden", baseRarity.length == 0 && maxRarity.length == 0); 
     $(".types .unselectAll").toggleClass("hidden", types.length == 0); 
     $(".ailments .unselectAll").toggleClass("hidden", ailments.length == 0); 
     $(".elements .unselectAll").toggleClass("hidden", elements.length == 0); 
     $(".killers .unselectAll").toggleClass("hidden", physicalKillers.length + magicalKillers.length == 0); 
     $(".imperils .unselectAll").toggleClass("hidden", imperils.length == 0); 
     $(".breaks .unselectAll").toggleClass("hidden", breaks.length == 0); 
-    $(".tankAbilities .unselectAll").toggleClass("hidden", tankAbilities.length == 0); 
+    $(".tankAbilities .unselectAll").toggleClass("hidden", tankAbilities.length == 0);
+    $(".mitigation .unselectAll").toggleClass("hidden", mitigation.length == 0);
     
     $(".elements .filters").toggleClass("hidden", elements.values.length == 0);
     $(".ailments .filters").toggleClass("hidden", ailments.values.length == 0);
@@ -326,12 +367,14 @@ var updateFilterHeadersDisplay = function() {
     $(".breaks .filters").toggleClass("hidden", breaks.values.length == 0);
     $(".imbues .filters").toggleClass("hidden", imbues.values.length == 0);
     $(".tankAbilities .filters").toggleClass("hidden", tankAbilities.values.length == 0);
+    $(".mitigation .filters").toggleClass("hidden", mitigation.values.length == 0);
     $("#elementsTargetAreaTypes").toggleClass("hidden", !elements.skillTypes.includes("actives") && !elements.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
     $("#ailmentsTargetAreaTypes").toggleClass("hidden", !ailments.skillTypes.includes("actives") && !ailments.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
     $("#killersTargetAreaTypes").toggleClass("hidden", !physicalKillers.skillTypes.includes("actives") && !physicalKillers.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
     $("#imperilsTargetAreaTypes").toggleClass("hidden", !imperils.skillTypes.includes("actives") && !imperils.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
     $("#breaksTargetAreaTypes").toggleClass("hidden", !breaks.skillTypes.includes("actives") && !breaks.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
     $("#imbuesTargetAreaTypes").toggleClass("hidden", !imbues.skillTypes.includes("actives") && !imbues.skillTypes.includes("lb") && !elements.skillTypes.includes("counter"));
+    $("#mitigationTargetAreaTypes").toggleClass("hidden", !mitigation.skillTypes.includes("actives") && !mitigation.skillTypes.includes("lb"));
 }
 
 
@@ -363,6 +406,15 @@ var displayUnits = function(units) {
     }
     
 };
+
+function toogleAllSkillDisplay(unitId) {
+    if (fullyDisplayedUnits.includes(unitId)) {
+        fullyDisplayedUnits.splice(fullyDisplayedUnits.indexOf(unitId), 1);
+    } else {
+        fullyDisplayedUnits.push(unitId);
+    }
+    update();
+}
 
 function displayUnitsAsync(units, start, div) {
     var html = '';
@@ -418,9 +470,16 @@ function displayUnitsAsync(units, start, div) {
             }
         }
         html += '</div>';
+        html += '<span class="showAllSkills glyphicon '
+        if (fullyDisplayedUnits.includes(unitData.unit.id)) {
+            html += "glyphicon-chevron-up";
+        } else {
+            html += "glyphicon-chevron-down";
+        }
+        html += '" onclick="toogleAllSkillDisplay(\'' + unitData.unit.id + '\')"></span>';
         
         html += '<div class="lb">';
-            if (mustDisplaySkill(unitData.unit.lb.maxEffects, "lb")) {
+            if (fullyDisplayedUnits.includes(unitData.unit.id) || mustDisplaySkill(unitData.unit.lb.maxEffects, "lb", unitData.unit.lb.name)) {
                 html += getLbHtml(unitData.unit.lb);             
             }
         html += '</div>';
@@ -428,7 +487,7 @@ function displayUnitsAsync(units, start, div) {
         html += '<div class="passives">';
             for (var i = 0, len = unitData.unit.passives.length; i < len; i++) {
                 var passive = unitData.unit.passives[i];
-                if (mustDisplaySkill(passive.effects, "passives")) {
+                if (fullyDisplayedUnits.includes(unitData.unit.id) || mustDisplaySkill(passive.effects, "passives", passive.name)) {
                     html += getSkillHtml(passive);             
                 }
             }
@@ -437,7 +496,7 @@ function displayUnitsAsync(units, start, div) {
         html += '<div class="actives">';
             for (var i = 0, len = unitData.unit.actives.length; i < len; i++) {
                 var active = unitData.unit.actives[i];
-                if (mustDisplaySkill(active.effects, "actives")) {
+                if (fullyDisplayedUnits.includes(unitData.unit.id) || mustDisplaySkill(active.effects, "actives", active.name)) {
                     html += getSkillHtml(active);         
                 }
             }
@@ -446,7 +505,7 @@ function displayUnitsAsync(units, start, div) {
         html += '<div class="magics">';
             for (var i = 0, len = unitData.unit.magics.length; i < len; i++) {
                 var magic = unitData.unit.magics[i];
-                if (mustDisplaySkill(magic.effects, "actives")) {
+                if (fullyDisplayedUnits.includes(unitData.unit.id) || mustDisplaySkill(magic.effects, "actives", magic.name)) {
                     html += getSkillHtml(magic);   
                 }
             }
@@ -466,7 +525,15 @@ function displayUnitsAsync(units, start, div) {
 function getSkillHtml(skill) {
     var html = '<div class="skill">';
     html += '<div><img class="skillIcon" src="img/items/' + skill.icon + '"/></div>'
-    html += '<div class="nameAndEffects"><span class="name">' + skill.name + '</span>'
+    html += '<div class="nameAndEffects"><div class="nameLine"><div><span class="name">' + skill.name;
+    if (skill.equipedConditions) {
+        html += '<span class="condition">' + getEquipedCondition(skill) + '</span>';
+    }
+    html += '</span></div>'
+    if (skill.rarity && skill.level) {
+        html += '<div class="rarityAndLevel"><span class="rarity">' + skill.rarity + '★</span><span class="level">lvl ' + skill.level + '</span></div>'
+    }
+    html += '</div>';
     for (var j = 0, lenj = skill.effects.length; j < lenj; j++) {
         if (skill.effects[j].effect && skill.effects[j].effect.randomlyUse) {
             html += '<span class="effect">Randomly use :</span>';
@@ -478,7 +545,7 @@ function getSkillHtml(skill) {
                 html += '</div>';
             }
         } else if (skill.effects[j].effect && skill.effects[j].effect.counterSkill) {
-            html += '<span class="effect">' + skill.effects[j].effect.percent + '% of chance to counter ' + skill.effects[j].effect.counterType + ' attacks with :</span>';
+            html += '<span class="effect">' + skill.effects[j].effect.percent + '% chance to counter ' + skill.effects[j].effect.counterType + ' attacks with :</span>';
             html += '<div class="subSkill">';
             html += getSkillHtml(skill.effects[j].effect.counterSkill);
             html += '</div>';
@@ -493,7 +560,7 @@ function getSkillHtml(skill) {
             html += getSkillHtml(skill.effects[j].effect.autoCastedSkill);
             html += '</div>';
         } else {
-            html += '<span class="effect">' + skill.effects[j].desc + '</span>';    
+            html += '<span class="effect">' + getEffectDescription(skill.effects[j]) + '</span>';    
         }
     }
     html += '</div></div>'; 
@@ -508,7 +575,7 @@ function getLbHtml(lb) {
     html += '<span class="case">Min :</span>'
     html += '<div class="skill"><div class="nameAndEffects">';
     for (var j = 0, len = lb.minEffects.length; j < len; j++) {
-        html += '<span class="effect">' + lb.minEffects[j].desc + '</span>';   
+        html += '<span class="effect">' + getEffectDescription(lb.minEffects[j]) + '</span>';   
     }
     html += '</div></div>';
     html += '</div>';
@@ -516,7 +583,7 @@ function getLbHtml(lb) {
     html += '<span class="case">Max :</span>'
     html += '<div class="skill"><div class="nameAndEffects">';
     for (var j = 0, len = lb.maxEffects.length; j < len; j++) {
-        html += '<span class="effect">' + lb.maxEffects[j].desc + '</span>';   
+        html += '<span class="effect">' + getEffectDescription(lb.maxEffects[j]) + '</span>';   
     }
     html += '</div></div>';
     html += '</div>';
@@ -525,10 +592,16 @@ function getLbHtml(lb) {
     return html;
 }
 
-function mustDisplaySkill(effects, type) {
+function mustDisplaySkill(effects, type, skillName) {
     var mustBeDisplayed = false;
+    if (skillName && matchesOneSearchToken(searchText, skillName)) {
+        return true;
+    }
     for (var j = effects.length; j--;) {
         var effect = effects[j];
+        if (effect.desc && matchesOneSearchToken(searchText, effect.desc)) {
+            return true;
+        }
         if (effect.effect) {
             if (types.length > 0 && effect.effect.equipedConditions && matches(effect.effect.equipedConditions, types)) {
                 return true;
@@ -553,6 +626,11 @@ function mustDisplaySkill(effects, type) {
             }
             if (imbues.values.length > 0 && imbues.skillTypes.includes(type) && isTargetToBeDispalyed(imbues, effect, type) && effect.effect.imbue && matches(imbues.values, effect.effect.imbue)) {
                 return true;
+            }
+            if (mitigation.values.length > 0 && mitigation.skillTypes.includes(type) && isTargetToBeDispalyed(mitigation, effect, type)) {
+                if (matches(mitigation.values, Object.keys(effect.effect))) {
+                    return true;
+                }
             }
             if (tankAbilities.values.length > 0 && tankAbilities.skillTypes.includes(type) && isTargetToBeDispalyed(tankAbilities, effect, type)) {
                 if (matches(tankAbilities.values, Object.keys(effect.effect))) {
@@ -589,6 +667,16 @@ function mustDisplaySkill(effects, type) {
             }
         }
     }
+}
+
+function matchesOneSearchToken(searchText, text) {
+    let tokens = getSearchTokens(searchText);
+    for (let i = 0; i < tokens.length; i++) {
+        if (matchesToken(tokens[i], text)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function isTargetToBeDispalyed(criteria, effect, type) {
@@ -658,6 +746,14 @@ function initFilters() {
     if (state.searchText) {
         $("#searchText").val(state.searchText);
     }
+    if (state.baseRarity) {
+        baseRarity = state.baseRarity;
+        select("baseRarity", baseRarity.map(r => r.toString()));
+    }
+    if (state.maxRarity) {
+        maxRarity = state.maxRarity;
+        select("maxRarity", maxRarity.map(r => r.toString()));
+    }
     if (state.equipmentTypes) {
         types = state.equipmentTypes;
         select("types", types);
@@ -668,13 +764,63 @@ function initFilters() {
         } else {
             window[unitSearchFilters[i]] = defaultFilter[unitSearchFilters[i]];
         }
-        select(unitSearchFilters[i], window[unitSearchFilters[i]].values);
+        if (unitSearchFilters[i] == 'breaks') {
+            select(unitSearchFilters[i], window[unitSearchFilters[i]].values.map(v => 'break_' + v));
+        } else {
+            select(unitSearchFilters[i], window[unitSearchFilters[i]].values);    
+        }
         select(unitSearchFilters[i] + "SkillTypes", window[unitSearchFilters[i]].skillTypes);
         select(unitSearchFilters[i] + "TargetAreaTypes", window[unitSearchFilters[i]].targetAreaTypes);
     }
     
     select("killersSkillTypes", physicalKillers.skillTypes);
     select("killersTargetAreaTypes", physicalKillers.targetAreaTypes);
+}
+
+function prepareUnitSearch() {
+    for(const [id, unit] of Object.entries(units)) {
+        let textToSearch = unit.name.toLowerCase();
+        for (i = 0; i < unit.magics.length; i++) {
+            textToSearch += "|" + getSkillSearchText(unit.magics[i]);
+        }
+        for (i = 0; i < unit.actives.length; i++) {
+            textToSearch += "|" + getSkillSearchText(unit.actives[i]);
+        }
+        for (i = 0; i < unit.passives.length; i++) {
+            textToSearch += "|" + getSkillSearchText(unit.passives[i]);
+        }
+        textToSearch += "|" + unit.lb.name.toLowerCase();
+        for (i = 0; i < unit.lb.maxEffects.length; i++) {
+            let effect = unit.lb.maxEffects[i];
+            if(effect.desc != null) {
+                textToSearch += "|" + effect.desc.toLowerCase();
+            }
+        }
+        unit.searchString = textToSearch;
+    }
+}
+
+function getSkillSearchText(skill) {
+    var textToSearch = skill.name.toLowerCase();
+    for (let j = 0; j < skill.effects.length; j++) {
+        let effect = skill.effects[j];
+        if(effect.desc != null) {
+            textToSearch += "|" + effect.desc.toLowerCase();
+        }
+        if (effect.effect && effect.effect.cooldownSkill) {
+            textToSearch += '|Available turn ' + effect.effect.startTurn + ' (' + effect.effect.cooldownTurns + ' turns cooldown)';
+            textToSearch += '|' + getSkillSearchText(effect.effect.cooldownSkill);
+        }
+        if (effect.effect && effect.effect.counterSkill) {
+            textToSearch += '|' + effect.effect.percent + '% chance to counter ' + effect.effect.counterType + ' attacks with :';
+            textToSearch += '|' + getSkillSearchText(effect.effect.counterSkill);
+        }
+        if (effect.effect && effect.effect.autoCastedSkill) {
+            textToSearch += '|Cast at the start of battle or when revived :';
+            textToSearch += '|' + getSkillSearchText(effect.effect.autoCastedSkill);
+        }
+    }
+    return textToSearch;
 }
 
 function updateHash() {
@@ -691,6 +837,12 @@ function updateHash() {
     }
     if (types && types.length > 0) {
         state.equipmentTypes = types;
+    }
+    if (baseRarity.length > 0) {
+        state.baseRarity = baseRarity;
+    }
+    if (maxRarity.length > 0) {
+        state.maxRarity = maxRarity;
     }
     
     window.location.hash = '#' + window.btoa(JSON.stringify(state));
@@ -712,6 +864,10 @@ function startPage() {
     
     // Populates the various filters
 	
+    // Rarity
+    addTextChoicesTo("maxRarity",'checkbox',{'2★':'2', '3★':'3','4★':'4','5★':'5', '6★':'6', '7★':'7'});
+    addTextChoicesTo("baseRarity",'checkbox',{'1★':'1','2★':'2', '3★':'3','4★':'4','5★':'5'});
+    
 	// Item types
 	addIconChoicesTo("types", typeList.slice(0,typeList.length-2), "checkbox", "equipment", function(v){return typeListLitterals[v]});
     
@@ -753,6 +909,13 @@ function startPage() {
     addIconChoicesTo("tankAbilities", ["drawAttacks", "stCover", "physicalAoeCover", "magicalAoeCover"], "checkbox", "tankAbilities", ["Draw Attacks", "ST Cover", "Physical AOE Cover", "Magical AOE Cover"]);
     addTextChoicesTo("tankAbilitiesSkillTypes",'checkbox',{'Passive':'passives', 'Active':'actives', 'LB':'lb'});
     
+
+    // Mitigation
+    addIconChoicesTo("mitigation", ["globalMitigation", "magicalMitigation", "physicalMitigation"], "checkbox", "mitigation", ["Mitigation", "Magic Mitigation", "Physical Mitigation"])
+    addTextChoicesTo("mitigationSkillTypes",'checkbox',{'Passive':'passives', 'Active':'actives', 'LB':'lb'});
+    addTextChoicesTo("mitigationTargetAreaTypes",'checkbox',{'Self':'SELF','ST':'ST', 'AOE':'AOE'});
+
+    
     $("#results").addClass(server);
     
 	// Triggers on filter selection
@@ -764,8 +927,11 @@ function startPage() {
 	// Ajax calls to get the item and units data, then populate unit select, read the url hash and run the first update
     getStaticData("data", true, function(result) {
         data = result;
+        dataById = {};
+        result.forEach(e => dataById[e.id] = e);
         getStaticData("unitsWithSkill", false, function(result) {
             units = result;
+            prepareUnitSearch();
             getStaticData("unitSearch", false, function(result) {    
                 unitSearch = result;
                 getStaticData("releasedUnits", false, function(result) {    

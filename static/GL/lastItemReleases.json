@@ -1,4 +1,204 @@
-[   
+[
+    {"date":"July the 4th, 2019","sources": [
+        {"type":"banner", "units":["100021705", "100022104", "100021803"]},
+        {"type":"event", "name":"Chocobo Forest - Exploration"},
+        {"type":"event", "name":"A World United"}
+    ]},
+    {"date":"June the 29th, 2019","sources": [
+        {"type":"banner", "units":["100021905", "100022005", "100021304"]},
+        {"type":"event", "name":"Farplane de Chocobo!"},
+        {"type":"event", "name":"The Dreaded Lost Continent"},
+        {"type":"storyPart", "name":"Scorn of the Lich", "ids":["308004800"]}
+    ]},
+    {"date":"June the 21th, 2019","sources": [
+        {"type":"banner", "units":["304000105", "304000405", "304000503"]},
+        {"type":"event", "name":"The Mana Beast"},
+        {"type":"event", "name":"To the Forgotten Capital - Exploration"}
+    ]},
+    {"date":"June the 14th, 2019","sources": [
+        {"type":"banner", "units":["207000405", "207000505", "207000204", "207000703"]},
+        {"type":"banner", "units":["401007305"]},
+        {"type":"event", "name":"Temple of the Ancients"},
+        {"type":"event", "name":"Pop Hits"},
+        {"type":"event", "name":"Hennes Mines"}
+    ]},
+    {"date":"June the 7th, 2019","sources": [
+        {"type":"banner", "units":["100017505", "100013704", "100021504", "100021603"]},
+        {"type":"event", "name":"Memories of an Automaton"}
+    ]},
+    {"date":"May the 31th, 2019","sources": [
+        {"type":"banner", "units":["100020505", "100020905"]},
+        {"type":"event", "name":"Figaro Castle - Exploration"},
+        {"type":"storyPart", "name":"Scorn of the Octopus and the Teacher", "ids":["310004600"]},
+        {"type":"storyPart", "name":"Madame Mansion level 3", "ids":["405005500", "504100870", "504230004", "409025900"]}
+    ]},
+    {"date":"May the 24th, 2019","sources": [
+        {"type":"banner", "units":["206001905", "206002005", "206000804", "206000703"]},
+        {"type":"event", "name":"Magitek Ruins - Central Area"},
+        {"type":"event", "name":"Figaro Castle"}
+    ]},
+    {"date":"May the 17th, 2019","sources": [
+        {"type":"banner", "units":["100019105", "100019205", "100019304", "100019403"]},
+        {"type":"event", "name":"The Orders and the Magitek Ruins"},
+        {"type":"event", "name":"The Floating Continent"},
+        {"type":"storyPart", "name":"From Step Ups", "ids":["309003900", "314002100"]}
+    ]},
+    {"date":"May the 10th, 2019","sources": [
+        {"type":"banner", "units":["401007605", "100020005", "100020204", "100020104", "100020303"]},
+        {"type":"event", "name":"Dwarven Castle"},
+        {"type":"event", "name":"Out for Vengeance"}
+    ]},
+    {"date":"May the 2nd, 2019","sources": [
+        {"type":"banner", "units":["204001705", "401001504", "401001604", "401001903"]},
+        {"type":"event", "name":"The Crimson Gear"},
+        {"type":"event", "name":"The Tower of Zot"}
+    ]},
+    {"date":"April the 26th, 2019","sources": [
+        {"type":"banner", "units":["331000705", "331000805", "331000904"]},
+        {"type":"event", "name":"Armeeggedon"},
+        {"type":"event", "name":"First and Last"},
+        {"type":"storyPart", "name":"Parameter Missions", "ids":["504228203", "504228200", "504228204", "504228201", "303005200", "409021900", "504228202", "408004300"]}
+    ]},
+    {"date":"April the 19th, 2019","sources": [
+        {"type":"banner", "units":["401006805", "401006905", "302001504", "302001603"]},
+        {"type":"event", "name":"Eggstinction"},
+        {"type":"event", "name":"The Battle of Judecca"}
+    ]},
+    {"date":"April the 12th, 2019","sources": [
+        {"type":"banner", "units":["100020605", "100020704", "100020803"]},
+        {"type":"event", "name":"March on Tiamat"},
+        {"type":"event", "name":"The Day the Spark was Lit"},
+        {"type":"storyPart", "name":"Scorn of the Beast of the Dark", "ids":["309004100"]}
+    ]},
+    {"date":"April the 05th, 2019","sources": [
+        {"type":"banner", "units":["253001305", "253001005", "253000704", "253001403"]},
+        {"type":"event", "name":"Desert Despair"},
+        {"type":"event", "name":"Nelveska Temple"},
+        {"type":"storyPart", "name":"Beast of the Dark II", "ids":["407004000", "504228870", "403045900"]}
+    ]},
+    {"date":"March the 29th, 2019","sources": [
+        {"type":"banner", "units":["331000105", "331000205", "331000405", "331000304", "331000503", "331000603"]},
+        {"type":"event", "name":"Elements' Formation"},
+        {"type":"storyPart", "name":"Asura", "ids":["504230005", "504230000", "504230001"]},
+        {"type":"storyPart", "name":"Chocobo", "ids":["409028100", "504230002", "304004500"]},
+        {"type":"storyPart", "name":"Bundles", "ids":["1500000098", "1500000099"]}
+    ]},
+    {"date":"March the 22th, 2019","sources": [
+        {"type":"banner", "units":["100019905", "100017605", "100017704", "100017803"]},
+        {"type":"event", "name":"The Auracite Chosen"},
+        {"type":"storyPart", "name":"Scorn of Gilgamesh", "ids":["304004000"]},
+        {"type":"storyPart", "name":"Chamber of Arm - Warden Welter", "ids":["409024200"]}
+    ]},
+    {"date":"March the 15th, 2019","sources": [
+        {"type":"banner", "units":["100019505", "100019604", "100019704", "100019803"]},
+        {"type":"event", "name":"Taking to the Skies"},
+        {"type":"event", "name":"Doga's Grotto - Exploration"}
+    ]},
+    {"date":"March the 8th, 2019","sources": [
+        {"type":"banner", "units":["203001405", "203001305", "203000604", "203001503"]},
+        {"type":"event", "name":"Cave of Shadows"}
+    ]},
+    {"date":"Febuary the 27th, 2019","sources": [
+        {"type":"banner", "units":["401000305", "401000205", "401002005", "401006005", "401005905", "401005305", "401005405", "302000705", "401002605", "401002705", "401003905", "401003805", "302000905"]},
+        {"type":"event", "name":"Shadow of Ruination"},
+        {"type":"storyPart", "name":"Chamber of Arm - Alpherg", "ids":["302006900", "302006800", "504228452"]}
+    ]},
+    {"date":"Febuary the 22th, 2019","sources": [
+        {"type":"banner", "units":["401004505", "401006405"]},
+        {"type":"event", "name":"Darkness Apocalypse"}
+    ]},
+    {"date":"Febuary the 15th, 2019","sources": [
+        {"type":"banner", "units":["100018705", "100018804", "100018904", "100019003"]},
+        {"type":"event", "name":"Lord of the Beasts"},
+        {"type":"event", "name":"Blacksmith of the Flame"}
+    ]},
+    {"date":"Febuary the 09th, 2019","sources": [
+        {"type":"banner", "units":["401006605", "401006705", "401003805", "401003905", "302000905", "401003704", "302001104", "302001004", "302001203"]},
+        {"type":"event", "name":"Dome - Exploration"},
+        {"type":"event", "name":"Yearning for Peace"}
+    ]},
+    {"date":"January the 25th, 2019","sources": [
+        {"type":"banner", "units":["210000605", "210001005", "210001904", "210001503"]},
+        {"type":"storyPart", "name":"Chamber of Arm - Sadalsuud", "ids":["407003600", "407003500", "504228161"]},
+        {"type":"event", "name":"Defeat Jie Revorse - GOD"},
+        {"type":"event", "name":"Zanarkand Ruins"},
+        {"type":"storyPart", "name":"Season 2 Chapter 6 - Part 2", "ids":["401002800", "303005600", "313005000", "504229221", "312002400", "409025300"]},
+        {"type":"storyPart", "name":"New trophies", "ids":["409025400", "409025500"]}
+    ]},
+    {"date":"January the 25th, 2019","sources": [
+        {"type":"banner", "units":["401006505", "318000105", "317000105", "320000104", "316000103", "319000104"]},
+        {"type":"event", "name":"Vanquish Jie Revorse!"},
+        {"type":"event", "name":"Operation MA Demolition"}
+    ]},
+    {"date":"January the 18th, 2019","sources": [
+        {"type":"banner", "units":["100018305", "100018504", "100018604", "100018403"]},
+        {"type":"event", "name":"Gaea's Cliff - Exploration"},
+        {"type":"event", "name":"Priestess of the Crystalline Waters"}
+    ]},
+    {"date":"January the 11th, 2019","sources": [
+        {"type":"banner", "units":["207000305", "207000805", "207000204", "207000703"]},
+        {"type":"event", "name":"Gaea's Cliff"}
+    ]},
+    {"date":"January the 4th, 2019","sources": [
+        {"type":"event", "name":"Heartless: Darkside"}
+    ]},
+	{"date":"December the 28th, 2018","sources": [
+        {"type":"banner", "units":["335000105", "335000205"]},
+        {"type":"event", "name":"Season of Mayhem"},
+		{"type":"event", "name":"Heartless: Guard Armor"},
+        {"type":"storyPart", "name":"Season 2 Chapter 6 - Part 1", "ids":["304004100", "405006000"]}
+        
+    ]},
+    {"date":"December the 21th, 2018","sources": [
+        {"type":"banner", "units":["401006105", "401006205", "302000705", "401002605", "401002705", "302000804", "401002804"]},
+        {"type":"event", "name":"Winter Mayhem"},
+        {"type":"storyPart", "name":"2nd Anniversary Fan Festa", "ids":["1100000216"]},
+        {"type":"storyPart", "name":"Chamber of Arm - Dabih", "ids":["303004900", "303004800", "504227701"]},
+        {"type":"storyPart", "name":"Winter bundles", "ids":["1500000089", "1100000233"]}
+    ]},
+    {"date":"December the 07th, 2018","sources": [
+        {"type":"banner", "units":["401006305"]},
+        {"type":"event", "name":"2nd Anniversary Fan Festa"},
+        {"type":"event", "name":"Red Hot Music"}
+    ]},
+    {"date":"December the 07th, 2018","sources": [
+        {"type":"banner", "units":["401006405"]},
+        {"type":"banner", "units":["100017905", "100018004", "100018104", "100018203"]},
+        {"type":"event", "name":"Sieghard, The Magnificient"}
+    ]},
+    {"date":"November the 30th, 2018","sources": [
+        {"type":"event", "name":"Akademeia"}
+    ]},
+    {"date":"November the 23th, 2018","sources": [
+        {"type":"banner", "units":["310000105", "401001205", "310000204", "401001304","310000304", "310000403"]},
+        {"type":"event", "name":"Destroy the Machine Lifeform"},
+        {"type":"event", "name":"Trial of Vengeance"},
+        {"type":"storyPart", "name":"Chamber of Arm - Nunki", "ids":["314001700", "314001600", "504227318"]},
+        {"type":"storyPart", "name":"Premium bundle", "ids":["1100000218", "504213740"]}
+    ]},
+    {"date":"November the 15th, 2018","sources": [
+        {"type":"banner", "units":["401004805", "401004705"]},
+        {"type":"banner", "units":["100006805", "100011705", "212000505", "100009805", "100010405", "100012405", "100007505", "302001405", "215000105", "215000205", "100009105"]},
+        {"type":"event", "name":"Revelations of Darkness"}
+    ]},
+    {"date":"November the 09th, 2018","sources": [
+        {"type":"banner", "units":["100017105", "100017304", "100017204", "100017403"]},
+        {"type":"event", "name":"Big Bridge - Exploration"},
+        {"type":"event", "name":"Lion of the Mysterious Woods"},
+        {"type":"storyPart", "name":"Steel Castle Melfikya", "ids":["316000600"]}
+    ]},
+    {"date":"November the 2nd, 2018","sources": [
+        {"type":"banner", "units":["254001805", "254001905", "254002004", "254001103"]},
+        {"type":"event", "name":"The Clash on Big Bridge"},
+        {"type":"event", "name":"Tower of Lezard Valeth"}
+    ]},
+    {"date":"October the 26th, 2018","sources": [
+        {"type":"banner", "units":["330000105", "330000205", "330000305", "330000404", "330000503"]},
+        {"type":"event", "name":"Halloween Castle"},
+        {"type":"event", "name":"Lost City of Dipan"},
+        {"type":"event", "name":"Challenge the Great Count"},
+        {"type":"storyPart", "name":"Season 2 Chapter 5 - Part 1", "ids":["504208970", "401002700", "409024800"]}
+    ]},
     {"date":"October the 19th, 2018","sources": [
         {"type":"banner", "units":["401005905", "401006005", "401002005", "401000205", "401000305", "401000404", "401002104", "401002204", "401000503"]},
         {"type":"event", "name":"An Eerie Invitation"},

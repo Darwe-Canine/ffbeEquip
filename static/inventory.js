@@ -192,7 +192,7 @@ function displayItemsByTypeAsync(items, start, div, id, jumpDiv) {
     html += '<div class="itemList">';
     for (var index = start, len = items.length; index < len; index++) {
         var item = items[index];
-        if (item === undefined) continue;
+        if (item === undefined || (item.access.includes("not released yet") && !itemInventory[item.id])) continue;
 
         if (item.type === currentItemType) {
             html += getItemDisplay(item);
@@ -220,7 +220,7 @@ function displayItemsAsync(items, start, div, id, max = 20) {
     var html = '';
     var end = Math.min(start + max, items.length);
     for (var index = start; index < end; index++) {
-        if (items[index] === undefined) continue;
+        if (items[index] === undefined || (items[index].access.includes("not released yet") && !itemInventory[items[index].id])) continue;
         html += getItemDisplay(items[index]);
     }
 
@@ -329,7 +329,7 @@ function addToInventory(id, showAlert = true) {
 function willSave() {
     saveNeeded = true;
     if (saveTimeout) {clearTimeout(saveTimeout)}
-    saveTimeout = setTimeout(saveUserData,3000, true, mustSaveUnits);
+    saveTimeout = setTimeout(saveUserData,3000, true, mustSaveUnits, false);
     $(".saveInventory").removeClass("hidden");
 }
 
@@ -364,7 +364,7 @@ function showRemoveAllToInventoryDialog() {
                 };
                 updateUnitAndItemCount();
                 displayStats();
-                saveUserData(true, false);
+                saveUserData(true, false, false);
             }
         }]
     });
@@ -467,7 +467,7 @@ function keepOnlyOneOfEachEquipement() {
     var tempResult = {};
     for (var index in data) {
         var item = data[index];
-        if (item.type != "materia" && !item.access.includes("not released yet")) {
+        if (item.type != "materia") {
             if (tempResult[item.id]) {
                 var alreadyPutItem = tempResult[item.id];
                 if (item.equipedConditions) {
@@ -500,7 +500,7 @@ function keepOnlyOneOfEachMateria() {
     var result = [];
     for (var index in data) {
         var item = data[index];
-        if (item.type == "materia" && !item.access.includes("not released yet") && !idsAlreadyKept.includes(item.id)) {
+        if (item.type == "materia" && !idsAlreadyKept.includes(item.id)) {
             result.push(item);
             idsAlreadyKept.push(item.id);
         }
@@ -658,7 +658,8 @@ function modifyItemEnhancements(itemId, enhancementPos) {
         item = applyEnhancements(currentEnhancementItem, enhancements);
     }
     $("#modifyEnhancementModal .modal-header .title").html(getImageHtml(item) + getNameColumnHtml(item));
-    $("#modifyEnhancementModal .value.rare").html(itemEnhancementLabels["rare"][item.type]);
+    $("#modifyEnhancementModal .value.rare_3").html(itemEnhancementLabels["rare_3"][item.type]);
+    $("#modifyEnhancementModal .value.rare_4").html(itemEnhancementLabels["rare_4"][item.type]);
 }
 
 function toggleItemEnhancement(enhancement) {
@@ -680,10 +681,17 @@ function toggleItemEnhancement(enhancement) {
             }
         }
     } else {
+        if (enhancement == 'rare_3' && enhancements.includes('rare_4')) {
+            enhancements.splice(enhancements.indexOf('rare_4'), 1);
+        }
+        if (enhancement == 'rare_4' && enhancements.includes('rare_3')) {
+            enhancements.splice(enhancements.indexOf('rare_3'), 1);
+        }
         if (enhancements.length == 3) {
             $.notify("No more than 3 item enhancements can be selected", "warning");
             return;   
         }
+        
         enhancements.push(enhancement);
     }
     modifyItemEnhancements(currentEnhancementItem.id, currentEnhancementItemPos);
@@ -787,6 +795,126 @@ function exportAsCsv() {
     window.saveAs(new Blob([csv], {type: "text/csv;charset=utf-8"}), 'FFBE_Equip - Equipment.csv');
 }
 
+function exportAsJson() {
+    let exportResult = [];
+    let typeById = {};
+    data.forEach(item => {
+        typeById[item.id] = item.type;
+    })
+    Object.keys(itemInventory).forEach(id => {
+      if (id != "enchantments" && id != "version") {
+        let itemResult = {"id" : id, "count": itemInventory[id] };
+        if (itemInventory.enchantments && itemInventory.enchantments[id]) {
+          itemResult.count -= itemInventory.enchantments[id].length;
+          itemInventory.enchantments[id].forEach(enh => {
+            let enhancedItemResult = {"id" : id, "count": 1, "enhancements": [] }
+            enhancedItemResult.enhancements = enh.map(e => {
+                if (e == 'rare_3' || e == 'rare_4') {
+                    return skillIdByItemEnhancement[e][typeById[id]];
+                } else {
+                    return skillIdByItemEnhancement[e];
+                }
+            })
+            exportResult.push(enhancedItemResult);
+          })
+        }
+        if (itemResult.count > 0) {
+            exportResult.push(itemResult);
+        }
+      }
+    })
+    
+    window.saveAs(new Blob([JSON.stringify(exportResult)], {type: "application/json;charset=utf-8"}), 'FFBE_Equip - Equipment.json');
+}
+
+function importInventory() {
+    if (!dataIds) {
+        dataIds = [];
+        data.forEach(item => {
+            if (!dataIds.includes(item.id)) {
+                dataIds.push(item.id)
+            }
+        });
+    }
+    importedOwnedUnit = null;
+    Modal.show({
+        title: "Import inventory",
+        body: '<p class="label label-danger">This feature is a Work in Progress. It will override your inventory on FFBE Equip</p><br/><br/>' +
+              '<input type="file" id="importFile" name="importFile" onchange="treatImportFile"/><br/>'+
+              '<p><a class="link" href="https://www.reddit.com/r/FFBraveExvius/comments/asd3ps/ffbe_data_exporter_its_back/?st=jsc28fu2&sh=a61614c2">Instructions to import your data directly from the game</a> (require +login to FFBE with Facebook for now. Google login will probably be supported later)</p><br>' +
+              '<p id="importSummary"></p>',
+        buttons: [{
+            text: "Import",
+            onClick: function() {
+                if (importedItemInventory) {
+                    itemInventory = importedItemInventory;
+                    saveUserData(true, false, false);
+                    showEquipments();
+                } else {
+                    Modal.show("Please select a file to import");
+                }
+                
+            }
+        }]
+    });
+    $('#importFile').change(treatImportFile);
+}
+
+let dataIds = null;
+let importedItemInventory;
+
+function treatImportFile(evt) {
+    var f = evt.target.files[0]; // FileList object
+    
+    
+  
+    var reader = new FileReader();
+    
+    reader.onload = function(){
+        try {
+            let temporaryResult = JSON.parse(reader.result);
+            var errors = importValidator.validate('itemInventory', temporaryResult);
+
+            // validation was successful
+            if (errors) {
+                Modal.showMessage("imported file doesn't have the correct form : " + JSON.stringify(errors));
+                return;
+            }
+            importedItemInventory = {"enchantments":{}};
+            temporaryResult.forEach(item => {
+                if (!item.id) {
+                    Modal.showMessage("item doesn't have id : " + JSON.stringify(item));
+                    importedOwnedUnit = null;
+                    return;
+                } else {
+                    if (!dataIds.includes(item.id)) {
+                        Modal.showMessage('unknown item id : ' + item.id);
+                        importedOwnedUnit = null;
+                        return;
+                    }
+                    if (!importedItemInventory[item.id]) {
+                        importedItemInventory[item.id] = 0;
+                    }
+                    importedItemInventory[item.id] += parseInt(item.count);
+                    
+                    if (item.enhancements) {
+                        if (!importedItemInventory.enchantments[item.id]) {
+                            importedItemInventory.enchantments[item.id] = [];
+                        }
+                        importedItemInventory.enchantments[item.id].push(item.enhancements.map(e => itemEnhancementBySkillId[e]));
+                    }
+                }
+            });
+            $('#importSummary').text('Items to import : ' + Object.keys(importedItemInventory).length);
+        } catch(e) {
+            Modal.showError('imported file is not in json format', e);
+        }
+            
+    };
+    reader.readAsText(f);
+    
+}
+
 function displayStats() {
     var stats = {};
 
@@ -887,3 +1015,35 @@ function startPage() {
         $(".itemsSidebar").addClass("collapsed");
     }
 }
+
+// create new JJV environment
+let importValidator = jjv();
+
+// Register a `user` schema
+importValidator.addSchema('itemInventory', {
+  type: 'array',
+  maxItems: 3000,
+  items: {
+    type: 'object',
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 9,
+        maxLength: 10
+      },
+      count: {
+        type:'number'
+      },
+      enhancements: {
+        type: 'array',
+        maxItems: 3,
+        items: {
+          type: 'string',
+          minLength: 6,
+          maxLength: 6
+        }
+      }
+    },
+    required: ['id', 'count']
+  }
+});

@@ -2,6 +2,7 @@ class BuildOptimizer {
     constructor(allItemVersions) {
         this.allItemVersions = allItemVersions;
         this.goalVariation = "avg";
+        this._alreadyUsedEspers = [];
     }
     
     set unitBuild(unitBuild) {
@@ -14,7 +15,11 @@ class BuildOptimizer {
                 for (var i = skill.equipedConditions.length; i--;) {
                     if (!elementList.includes(skill.equipedConditions[i]) && !typeList.includes(skill.equipedConditions[i])) {
                         if (!this._unitBuild.fixedItemsIds.includes(skill.equipedConditions[i]) && !this.desirableItemIds.includes(skill.equipedConditions[i])) {
-                            this.desirableItemIds.push(skill.equipedConditions[i]);            
+                            if (Array.isArray(skill.equipedConditions[i])) {
+                                this.desirableItemIds = this.desirableItemIds.concat(skill.equipedConditions[i]);
+                            } else {
+                                this.desirableItemIds.push(skill.equipedConditions[i]);
+                            }        
                         }
                     }
                 }
@@ -23,11 +28,7 @@ class BuildOptimizer {
     }
     
     set alreadyUsedEspers(alreadyUsedEspers) {
-        if (this.useEspers) {
-            this.selectedEspers = this.selectEspers(alreadyUsedEspers, this.ennemyStats);
-        } else {
-            this.selectedEspers = [];
-        }
+        this._alreadyUsedEspers = alreadyUsedEspers;
     }
     
     optimizeFor(typeCombinations, betterBuildFoundCallback) {
@@ -50,14 +51,35 @@ class BuildOptimizer {
                 }
             }
             
+            if (this.useEspers) {
+                this.selectedEspers = this.selectEspers(this._alreadyUsedEspers, this.ennemyStats, typeCombinations[index].combination);
+            } else {
+                this.selectedEspers = [];
+            }
+            
             var build = [null, null, null, null, null, null, null, null, null, null,null].concat(applicableSkills);
             this.findBestBuildForCombination(0, build, typeCombinations[index].combination, dataWithdConditionItems, typeCombinations[index].fixedItems, this.getElementBasedSkills(), this.getItemBasedSkills());
         }
     }
     
-    selectEspers(alreadyUsedEspers, ennemyStats) {
+    selectEspers(alreadyUsedEspers, ennemyStats, typeCombination) {
         var selectedEspers = [];
-        var keptEsperRoot = EsperTreeComparator.sort(this.espers, alreadyUsedEspers, this._unitBuild.involvedStats, ennemyStats);
+        let espersToUse = {};
+        Object.keys(this.espers).forEach(name => {
+            let e = this.espers[name];
+            if (e.conditional && e.conditional.some(c => typeCombination.includes(c.equipedCondition))) {
+                e = JSON.parse(JSON.stringify(e));
+                e.conditional.filter(c => typeCombination.includes(c.equipedCondition)).forEach(c => {
+                   baseStats.forEach(s => {
+                       if (c[s+'%']) {
+                           addToStat(e, s+'%', c[s+'%']);
+                       }
+                   }) 
+                });
+            }
+            espersToUse[name] = e;
+        })
+        var keptEsperRoot = EsperTreeComparator.sort(espersToUse, alreadyUsedEspers, this._unitBuild.involvedStats, ennemyStats);
         for (var index = keptEsperRoot.children.length; index--;) {
             if (!selectedEspers.includes(keptEsperRoot.children[index])) {
                 selectedEspers.push(keptEsperRoot.children[index].esper);
@@ -111,17 +133,6 @@ class BuildOptimizer {
                 }
             }
         }
-        var index = 0;
-        while (index < tempResult.length) {
-            if (forcedItems.includes(tempResult[index].item.id)) {
-                tempResult[index].available--;
-                if (tempResult[index].available <= 0) {
-                    tempResult.splice(index,1);
-                    continue;
-                }
-            }
-            index++;
-        }
         
         var numberNeeded = 0;
         for (var slotIndex = typeCombination.length; slotIndex--;) {
@@ -144,7 +155,14 @@ class BuildOptimizer {
             if (weaponList.includes(type) && (typeCombination[1] || this._unitBuild.fixedItems[0] || this._unitBuild.fixedItems[1]) && isTwoHanded(entry.item) ) {
                 continue; // ignore 2 handed weapon if we are in a DW build, or a weapon was already fixed
             }
-            itemPool.addItem(entry);    
+            let available = entry.available;
+            if (forcedItems.includes(entry.item.id)) {
+                available--;
+                if (available <= 0) {
+                    continue;
+                }
+            }
+            itemPool.addItem(entry, available);
         }
         
         itemPool.prepare();
@@ -280,14 +298,14 @@ class BuildOptimizer {
                 }
             }
             if (fixedItems[10]) {
-                this.tryEsper(build, fixedItems[10]);
+                this.tryEsper(build, fixedItems[10], fixedItems);
             } else {
                 if (this.selectedEspers.length > 0) {
                     for (var esperIndex = 0, len = this.selectedEspers.length; esperIndex < len; esperIndex++) {
-                        this.tryEsper(build, this.selectedEspers[esperIndex])  
+                        this.tryEsper(build, this.selectedEspers[esperIndex], fixedItems)  
                     }
                 } else {
-                    this.tryEsper(build, null);
+                    this.tryEsper(build, null, fixedItems);
                 }
             }
         } else {
@@ -295,12 +313,12 @@ class BuildOptimizer {
         }
     }
 
-    tryEsper(build, esper) {
+    tryEsper(build, esper, fixedItems) {
         build[10] = esper;
         var value = calculateBuildValueWithFormula(build, this._unitBuild, this.ennemyStats, this._unitBuild.formula, this.goalVariation, this.useNewJpDamageFormula);
         if ((value != -1 && this._unitBuild.buildValue[this.goalVariation] == -1) || value[this.goalVariation] > this._unitBuild.buildValue[this.goalVariation]) {
             
-            var slotsRemoved = this.tryLessSlots(build, value, this._unitBuild.fixedItems);
+            var slotsRemoved = this.tryLessSlots(build, value, this._unitBuild.fixedItems, fixedItems);
             
             this._unitBuild.build = build.slice();
             if (value.switchWeapons) {
@@ -312,7 +330,7 @@ class BuildOptimizer {
             this._unitBuild.freeSlots = slotsRemoved;
             this.betterBuildFoundCallback(this._unitBuild.build, this._unitBuild.buildValue, slotsRemoved);
         } else if ((value != -1 && this._unitBuild.buildValue[this.goalVariation] == -1) || value[this.goalVariation] == this._unitBuild.buildValue[this.goalVariation]) {
-            var slotsRemoved = this.tryLessSlots(build, value, this._unitBuild.fixedItems);
+            var slotsRemoved = this.tryLessSlots(build, value, this._unitBuild.fixedItems, fixedItems);
             
             if (slotsRemoved > this._unitBuild.freeSlots) {
                 this._unitBuild.build = build.slice();
@@ -340,7 +358,7 @@ class BuildOptimizer {
         }
     }
     
-    tryLessSlots(build, value, fixedItems) {
+    tryLessSlots(build, value, alreadyfixedItems, forcedItems) {
         var slotToRemove = 9;
         var slotsRemoved = 0;
         slotToRemoveLoop: while(slotToRemove > 5) {
@@ -349,20 +367,18 @@ class BuildOptimizer {
                 slotsRemoved++;
                 continue;
             }
-            if (fixedItems[slotToRemove]) {
+            if (alreadyfixedItems[slotToRemove] || forcedItems[slotToRemove]) {
                 slotToRemove--;
                 continue;
             }
-            for (var skillIndex = build.length - 1; skillIndex > 10; skillIndex--) {
-                if (build[skillIndex].equipedConditions && build[skillIndex].equipedConditions.includes(build[slotToRemove].id)) {
-                    slotToRemove--;
-                    continue slotToRemoveLoop;
-                }
+            if (this.desirableItemIds.includes(build[slotToRemove].id)) {
+                slotToRemove--;
+                continue slotToRemoveLoop;
             }
             var removedItem = build[slotToRemove];
             build[slotToRemove] = null;
             
-            var testValue = calculateBuildValueWithFormula(build, this._unitBuild, this.ennemyStats, this._unitBuild.formula, this.goalVariation);
+            var testValue = calculateBuildValueWithFormula(build, this._unitBuild, this.ennemyStats, this._unitBuild.formula, this.goalVariation, this.useNewJpDamageFormula);
             if (testValue[this.goalVariation] >= value[this.goalVariation]) {
                 slotToRemove--;
                 slotsRemoved++;
